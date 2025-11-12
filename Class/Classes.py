@@ -33,15 +33,15 @@ class Deck:
 
     @classmethod
     def create(cls):
-        redCards: List[Card] = [Card(CardColor.RED, number) for number in range(1, 10)]
-        greenCards: List[Card] = [Card(CardColor.GREEN, number) for number in range(1, 10)]
-        blueCards: List[Card] = [Card(CardColor.BLUE, number) for number in range(1, 10)]
-        blackCards: List[Card] = [Card(CardColor.BLACK, number) for number in range(1, 10)]
-        yellowCards: List[Card] = [Card(CardColor.YELLOW, number) for number in range(1, 10)]
+        red_cards: List[Card] = [Card(CardColor.RED, number) for number in range(1, 10)]
+        green_cards: List[Card] = [Card(CardColor.GREEN, number) for number in range(1, 10)]
+        blue_cards: List[Card] = [Card(CardColor.BLUE, number) for number in range(1, 10)]
+        black_cards: List[Card] = [Card(CardColor.BLACK, number) for number in range(1, 10)]
+        yellow_cards: List[Card] = [Card(CardColor.YELLOW, number) for number in range(1, 10)]
 
-        allCards = redCards + greenCards + blueCards + blackCards + yellowCards
-        allCards = allCards + allCards
-        return Deck(cards=deque(allCards))
+        all_cards = red_cards + green_cards + blue_cards + black_cards + yellow_cards
+        all_cards = all_cards + all_cards
+        return Deck(cards=deque(all_cards))
 
     @classmethod
     def shuffle(cls):
@@ -49,21 +49,21 @@ class Deck:
 
     @classmethod
     def deal(cls) -> List[Card]:
-        cardsDealt: List[Card] = []
+        cards_dealt: List[Card] = []
         for i in range(4):
-            cardsDealt.append(cls.cards.popleft())
-        return cardsDealt
+            cards_dealt.append(cls.cards.popleft())
+        return cards_dealt
 
     @classmethod
-    def draw_cards(cls, numberOfCards: int) -> List[Card]:
-        cardsDrawn: List[Card] = []
-        for i in range(numberOfCards):
-            cardsDrawn.append(cls.cards.popleft())
-        return cardsDrawn
+    def draw_cards(cls, number_of_cards: int) -> List[Card]:
+        cards_drawn: List[Card] = []
+        for i in range(number_of_cards):
+            cards_drawn.append(cls.cards.popleft())
+        return cards_drawn
 
     @classmethod
-    def add_cards(cls, cardsToAdd: List[Card]):
-        cls.cards.extend(cardsToAdd)
+    def add_cards(cls, cards_to_add: List[Card]):
+        cls.cards.extend(cards_to_add)
 
 @dataclass
 class GameState:
