@@ -35,9 +35,9 @@ class Player:
     type: PlayerType
 
     @classmethod
-    def draw(cls, cardsDrawn: List[Card]):
-        if len(cardsDrawn) <= 20:
-            cls.hand = cls.hand + cardsDrawn
+    def draw(cls, cards_drawn: List[Card]):
+        if len(cards_drawn) <= 20:
+            cls.hand = cls.hand + cards_drawn
         else:
            raise ValueError("Player cannot hold more than 20 cards!")
 
@@ -57,3 +57,7 @@ class Player:
     def discard_card(cls, card: Card):
         cls.hand.remove(card)
 
+    @classmethod
+    def discard_valid_cards(cls, cards: List[Card]):
+        for card in cards:
+            cls.hand.remove(card) # TODO Confirm if remove(card) only removes one instance of the card if there are two
