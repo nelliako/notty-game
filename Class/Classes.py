@@ -14,6 +14,11 @@ class State(Enum):
     WON = auto()
     CONTINUE = auto()
 
+class DrawOptions(Enum):
+    ONE = 1
+    TWO = 2
+    THREE = 3
+
 @dataclass
 class CardColor(Enum):
     RED = Color(220, 20, 60, 255)
@@ -67,7 +72,7 @@ class Deck:
 
 @dataclass
 class GameState:
-    playerQueue: Deque[Player] # 0. Current Player 1. Next/Previous Player 2. Previous Player
+    players: Deque[Player] # 0. Current Player 1. Next/Previous Player 2. Previous Player
     currentPlayer: Player
     chosenPlayer: Player
     deck: Deck = Deck.create()
