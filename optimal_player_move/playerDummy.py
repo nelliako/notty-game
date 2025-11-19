@@ -21,11 +21,8 @@ class Dummy():
         parameter = random.choice([1,2,3])
         self.available_moves=self.updateAvailableMoves()
         if self.temp == PlayerMove.Draw:
-
             return (self.temp,parameter)
-        
         return (self.temp,0)
-    
     
     #List of Player Moves for reference
             #PlayerMove.DRAW,
