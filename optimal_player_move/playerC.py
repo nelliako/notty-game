@@ -2,15 +2,18 @@ import pygame
 import numpy as np
 import random
 import PlayerMove
-import valid
+
 
 class playerC():
-    def __init__(self,hand, game,deck,current_player, valid_moves):
+    def __init__(self, game,deck,players, valid_moves):
         self.hand = hand
         self.game = game
         self.deck = deck
-        self.current_player = current_player
-        self.valid_moves=valid_moves
+        self.current_player = players[0]
+        self.next_player = players[1]
+        self.prev_player = players[2]
+        self.available_moves=valid_moves
+
 
     def observe(self, opp1: PlayerX, opp2: PlayerY):
 
@@ -19,7 +22,8 @@ class playerC():
         game_state = [ len(self.deck), len(self.hand), len(playerXHand), len(playerYHand), ]
         
 
-    def check
+    def get_weights(self):
+
 
 
 
