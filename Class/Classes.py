@@ -37,7 +37,7 @@ class Deck:
     cards: Deque[Card]
 
     @classmethod
-    def create(cls):
+    def create(self):
         red_cards: List[Card] = [Card(CardColor.RED, number) for number in range(1, 10)]
         green_cards: List[Card] = [Card(CardColor.GREEN, number) for number in range(1, 10)]
         blue_cards: List[Card] = [Card(CardColor.BLUE, number) for number in range(1, 10)]
@@ -48,27 +48,24 @@ class Deck:
         all_cards = all_cards + all_cards
         return Deck(cards=deque(all_cards))
 
-    @classmethod
-    def shuffle(cls):
-        random.shuffle(cls.cards)
 
-    @classmethod
-    def deal(cls) -> List[Card]:
+    def shuffle(self):
+        random.shuffle(self.cards)
+
+    def deal(self) -> List[Card]:
         cards_dealt: List[Card] = []
         for i in range(4):
-            cards_dealt.append(cls.cards.popleft())
+            cards_dealt.append(self.cards.popleft())
         return cards_dealt
 
-    @classmethod
-    def draw_cards(cls, number_of_cards: int) -> List[Card]:
+    def draw_cards(self, number_of_cards: int) -> List[Card]:
         cards_drawn: List[Card] = []
         for i in range(number_of_cards):
-            cards_drawn.append(cls.cards.popleft())
+            cards_drawn.append(self.cards.popleft())
         return cards_drawn
 
-    @classmethod
-    def add_cards(cls, cards_to_add: List[Card]):
-        cls.cards.extend(cards_to_add)
+    def add_cards(self, cards_to_add: List[Card]):
+        self.cards.extend(cards_to_add)
 
 @dataclass
 class GameState:

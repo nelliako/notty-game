@@ -34,30 +34,24 @@ class Player:
     hand: List[Card]
     type: PlayerType
 
-    @classmethod
-    def draw(cls, cards_drawn: List[Card]):
+    def draw(self, cards_drawn: List[Card]):
         if len(cards_drawn) <= 20:
-            cls.hand = cls.hand + cards_drawn
+            self.hand = self.hand + cards_drawn
         else:
            raise ValueError("Player cannot hold more than 20 cards!")
 
-    @classmethod
-    def shuffle_hand(cls):
-        random.shuffle(cls.hand)
+    def shuffle_hand(self):
+        random.shuffle(self.hand)
 
-    @classmethod
-    def take_card(cls, card: Card):
-        cls.hand.append(card)
+    def take_card(self, card: Card):
+        self.hand.append(card)
 
-    @classmethod
-    def lose_card(cls, card: int) -> Card:
-        return cls.hand.pop(card)
+    def lose_card(self, card: int) -> Card:
+        return self.hand.pop(card)
 
-    @classmethod
-    def discard_card(cls, card: Card):
-        cls.hand.remove(card)
+    def discard_card(self, card: Card):
+        self.hand.remove(card)
 
-    @classmethod
-    def discard_valid_cards(cls, cards: List[Card]):
+    def discard_valid_cards(self, cards: List[Card]):
         for card in cards:
-            cls.hand.remove(card) # TODO Confirm if remove(card) only removes one instance of the card if there are two
+            self.hand.remove(card) # TODO Confirm if remove(card) only removes one instance of the card if there are two
