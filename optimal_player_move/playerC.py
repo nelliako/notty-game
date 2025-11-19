@@ -5,34 +5,28 @@ import PlayerMove
 
 
 class playerC():
-    def __init__(self, game,deck,players, valid_moves):
-        self.hand = hand
-        self.game = game
+    def __init__(self,deck,players, valid_moves):
         self.deck = deck
-        self.current_player = players[0]
+        self.curr_player = players[0]
         self.next_player = players[1]
         self.prev_player = players[2]
         self.available_moves=valid_moves
 
 
-    def observe(self, opp1: PlayerX, opp2: PlayerY):
+    #creates a array of number of cards in each carrier : Deck, Curr, Next, Prev , Cards in Play
+    def observe(self):
+        self.game_state = [ len(self.deck), len(self.curr_player.hand), len(next_player.hand), len(prev_player.hand),90 ]
+        #following is a sanity check, comment out later , or maybe not
+        if sum(self.game_state)!=180: return 'Critical Game Error' #if total number of cards in the game is not 90 at any time
 
-        playerXHand = opp1.hand
-        playerYHand = opp2.hand
-        game_state = [ len(self.deck), len(self.hand), len(playerXHand), len(playerYHand), ]
-        
-
+    #creates a weight array that assigns a weight to each card in respective hand 
     def get_weights(self):
 
 
+    def get_easyMove(self):
 
 
-    def get_random_action(self):
-        self.temp=random.choice(self.valid_moves)
-        parameter = random.choice([1,2,3])
-        if self.temp == PlayerMove.Draw:
-            return (self.temp,parameter)
-        return (self.temp,0)
+
     
     def updateAvailableMoves(self):
         self.valid_moves.remove(self.temp)
