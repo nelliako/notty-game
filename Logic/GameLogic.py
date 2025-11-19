@@ -30,14 +30,15 @@ def game_loop():
     for player in game_state.players:
         player.draw(game_state.deck.deal())
 
-    # set the current player to the first player and remove current player from the players list
-    game_state.currentPlayer = game_state.players.popleft()
-
     while game_state.state == State.CONTINUE:
+        # check if any player has no cards in their hand
         if any([len(player.hand) == 0 for player in game_state.players]):
             game_state.state = State.WON
             # TODO Say which player won
             break
+
+        # set the current player to the first player and remove current player from the players list
+        game_state.currentPlayer = game_state.players.popleft()
 
         available_moves: List[PlayerMove] = [
             PlayerMove.DRAW,
