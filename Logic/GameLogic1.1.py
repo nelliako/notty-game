@@ -83,7 +83,38 @@ def handle_action_steal(current_player: Player, opponents: List[Player], context
 
 # (INCOMPLETE) Action 3: draw 1 card, discard 1 card; constraints
 def handle_action_swap(player: Player, deck: Deck, context: TurnContext):
-....
+
+    # Has this action been done before?
+    if context.has_swapped_card == True:
+        return
+
+    # Drawing card from the deck and accessing it from the list
+    card_drawn = deck.draw_cards(1)[0]
+    print(f'You drew {card_drawn}')
+
+    # Choose the card to discard when player is human
+    if player.type == PlayerType.HUMAN:
+        print('Which card do you want to discard?')
+
+        # Numerating the cards so that the user could choose which one to discard
+        for card in range(len(player.hand)):
+            print(card)
+            print (player.hand[card])
+        print(len(player.hand))
+        print(card_drawn)
+        user_input = int(input('Provide the card number'))
+
+        # Discard the chosen card
+        if user_input == len(player.hand):
+            context.has_swapped_card = True
+            return
+
+        player.hand.take_card(card_drawn)
+        player.hand.remove_card(player.hand[user_input])
+        context.has_swapped_card = True
+        return
+    # TODO Choose the card to discard when player is computer
+
 
 # (INCOMPLETE) Actions 4: discard group - no constraints
 def handle_action_discard_group(player: Player, deck: Deck):
