@@ -1,7 +1,8 @@
 import pygame
 import numpy as np
 import random
-import Class.Player from PlayerMove
+import PlayerMove
+import valid
 
 class playerC():
     def __init__(self,hand, game,deck,current_player, valid_moves):
@@ -11,14 +12,14 @@ class playerC():
         self.current_player = current_player
         self.valid_moves=valid_moves
 
-    def observe(self, opp: PlayerX):
-        
-        playerXHand = opp.hand
-        playerYHand = TempObject.get_hand()
+    def observe(self, opp1: PlayerX, opp2: PlayerY):
+
+        playerXHand = opp1.hand
+        playerYHand = opp2.hand
         game_state = [ len(self.deck), len(self.hand), len(playerXHand), len(playerYHand), ]
         
 
-
+    def check
 
 
 
