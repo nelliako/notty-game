@@ -171,13 +171,11 @@ def run_game():
         players.append(Player(playerId=uuid.uuid4(), hand=[], type=PlayerType.COMPUTER))
 
     # 1. Setup
-    deck: Deck = Deck()
-    game_state = GameState(players=players, deck=deck)
+    game_state = GameState(players=players, deck=Deck())
     
     # Deal Hands 
     for player in game_state.players:
-        cards_dealt = deck.draw_cards(4)
-        player.draw(cards_dealt)
+        player.draw(game_state.deck.draw_cards(4))
 
     game_state.currentPlayer = game_state.players.popleft()
     turn_context = TurnContext()
