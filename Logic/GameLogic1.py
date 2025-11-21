@@ -1,10 +1,8 @@
 import random
 import sys
+import uuid
 from typing import List, Optional
 
-
-from Class.Classes import Deck, GameState, State, Card
-from Class.Player import Player, PlayerMove, PlayerType
 from Logic.ValidateCardLogic import contains_valid_group
 
 # Turns Tracking: tracks the state of the current turn to enforce "at most per turn" rules
@@ -81,7 +79,7 @@ def handle_action_steal(current_player: Player, opponents: List[Player], context
     # Check if the opponent won (ran out of cards due to steal) 
     # This will be caught in the main loop win check
 
-# (INCOMPLETE) Action 3: draw 1 card, discard 1 card; constraints
+# Action 3: draw 1 card, discard 1 card; constraints
 def handle_action_swap(player: Player, deck: Deck, context: TurnContext):
 
     # Has this action been done before?
@@ -107,27 +105,64 @@ def handle_action_swap(player: Player, deck: Deck, context: TurnContext):
         # Discard the chosen card
         if user_input == len(player.hand):
             context.has_swapped_card = True
+            deck.add_cards([card_drawn])
+            deck.shuffle()
             return
 
         player.hand.take_card(card_drawn)
         player.hand.remove_card(player.hand[user_input])
+        # Adding the removed card back to the deck
+        deck.add_cards([player.hand[user_input]])
+        # Shuffling the deck - do I need to create object Deck?
+        deck.shuffle() 
         context.has_swapped_card = True
         return
-    # TODO Choose the card to discard when player is computer
+    
+    # Choose the card to discard when player is computer
+    if player.type == PlayerType.COMPUTER: 
+        # Pick a random card
+        # [0, len(player.hand) - 1] indices correspond to the current hand
+        # len(player.hand) index in the drawn_card.
+        card_index = random.randint(0, len(player.hand))
+        # If we choose the drawn_card, the hand does not change
+        if card_index != len(player.hand):
+            player.hand.remove_card(player.hand[card_index])
+            player.hand.take_card(card_drawn)
+        # Adding the removed card back to the deck
+        deck.add_cards([player.hand[card_index]])
+        # Shuffling the deck - do I need to create object Deck?
+        deck.shuffle() 
+        context.has_swapped_card = True
+        return
 
 
-# (INCOMPLETE) Actions 4: discard group - no constraints
-def handle_action_discard_group(player: Player, deck: Deck):
-....
+# Actions 4: discard group - no constraints
+def handle_action_discard_group(player: Player, deck: Deck, context: TurnContext):
+    valid_group = contains_valid_group(player.hand)
+    if valid_group != None:
+        for card in valid_group:
+            for index in range(len(player.hand)):
+                if card == player.hand[index]:
+                    player.hand.remove_card(player.hand[index])
+                    # Adding the removed card back to the deck
+                    deck.add_cards(player.hand[index])
+                    # Shuffling the deck - do I need to create object Deck?
+                    deck.shuffle() 
+                    break
+
+
+# Checking for the while condition
+def are_all_hands_non_empty(state: GameState):
+    for player in state.players:
+        if len(player.hand) == 0:
+            return False
+
+    return True
 
 # (INCOMPLETE) Main game loop
 def run_game():
     # 1. Setup 
-    game_state = GameState(
-        players=deque(), 
-        currentPlayer=None, 
-        chosenPlayer=None
-    )
+    game_state = GameState()
     
     # Initialise Players
     num_players = 3 
@@ -144,3 +179,12 @@ def run_game():
     turn_context = TurnContext()
 
     print("Game Start")
+
+
+    # while there is no winner -> while all hands are not empty
+    #while are_all_hands_non_empty(game_state) == True:
+
+
+if __name__ == '__main__':
+    run_game()
+
