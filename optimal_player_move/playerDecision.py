@@ -32,7 +32,6 @@ class EASY(playerDecision):
     def __init__(self,valid_moves):
         super().__init__(GameState)
         self.available_moves=valid_moves
-        self.available_moves=valid_moves
     
     # updates the list of available moves for the current player
     def updateAvailableMoves(self,chosenMove):
