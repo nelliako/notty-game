@@ -5,6 +5,7 @@
 #                        
 import pygame
 import random
+
 from Class.Classes import Deck, GameState, State, DrawOptions
 from Class.Player import Player, PlayerMove, PlayerType
 
@@ -21,10 +22,11 @@ class playerDecision:
         self.currPlayer=GameState.currentPlayer
         self.nextPlayer = GameState.players[0]
         self.prevPlayer = GameState.players[1]
-    
+    #delegates to subclasses
     def get_move(self):
         pass
-
+    def updateAvailableMoves(self,chosenMove):
+        pass
 
 class EASY(playerDecision):
     def __init__(self,valid_moves):
@@ -39,6 +41,7 @@ class EASY(playerDecision):
             self.available_moves.remove(self.temp)
         return self.available_moves
     
+    # core logic for player 'EASY' aka my dummy
     #retrieves and returns a random move from allowed valid moves for the player and also a parameter defining number of cards or chosen player
     def choose(self):
         self.temp=random.choice(self.available_moves)
@@ -59,6 +62,51 @@ class EASY(playerDecision):
 
 
 
+class MEDIUM(playerDecision):
+    def __init__(self,valid_moves):
+        super().__init__(GameState)
+        self.available_moves=valid_moves
+        self.available_moves=valid_moves
+    
+    # updates the list of available moves for the current player
+    def updateAvailableMoves(self,chosenMove):
+        #removes moves 1,2,3 only as they are only allowed once
+        if chosenMove!=PlayerMove.DISCARD:
+            self.available_moves.remove(self.temp)
+        return self.available_moves
+    
+    #TODO: Core logic for player 'MEDIUM'
+    def choose(self):
+        pass
+
+    #returns single chosen move and calls updateAvailableMoves
+    def get_move(self):
+        move=self.choose()
+        self.available_moves=self.updateAvailableMoves(move)
+        return move
+
+class HARD(playerDecision):
+    def __init__(self,valid_moves):
+        super().__init__(GameState)
+        self.available_moves=valid_moves
+        self.available_moves=valid_moves
+    
+    # updates the list of available moves for the current player
+    def updateAvailableMoves(self,chosenMove):
+        #removes moves 1,2,3 only as they are only allowed once
+        if chosenMove!=PlayerMove.DISCARD:
+            self.available_moves.remove(self.temp)
+        return self.available_moves
+    
+    #TODO: Core logic for player 'HARD'
+    def choose(self):
+        pass
+
+    #returns single chosen move and calls updateAvailableMoves
+    def get_move(self):
+        move=self.choose()
+        self.available_moves=self.updateAvailableMoves(move)
+        return move
 
 
 
