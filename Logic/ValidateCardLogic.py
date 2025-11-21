@@ -1,6 +1,5 @@
 from typing import List, Dict
-from Class.Classes import Card, CardColor
-from Class.Player import Player
+from Class.Classes import Card, CardColor, Player
 
 def colours_identical(cards: List[Card]) -> list[Card] | None:
     colors = {}

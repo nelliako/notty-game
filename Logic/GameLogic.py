@@ -1,8 +1,8 @@
 import uuid
+from collections import deque
 from typing import Deque, List
 
-from Class.Classes import Deck, GameState, State, DrawOptions
-from Class.Player import Player, PlayerMove, PlayerType
+from Class.Classes import Deck, GameState, State, DrawOptions, Player, PlayerMove, PlayerType
 
 
 def determine_player_draw_options(max_card_draw_size: int) -> List[DrawOptions]:
@@ -20,8 +20,8 @@ def game_loop():
     number_of_players = 3 # int(input("How many players? "))
 
     # initialize game state & shuffle the deck
-    game_state = GameState()
-    game_state.deck.shuffle()
+    game_state = GameState(players=deque(), deck=Deck())
+    game_state.deck.shuffle_deck()
 
     for i in range(number_of_players):
         game_state.players.append(Player(playerId=uuid.uuid4(), type=PlayerType.COMPUTER))
@@ -69,7 +69,7 @@ def game_loop():
                 # draw move options
                 draw_options = determine_player_draw_options(max_card_draw_size)
 
-                game_state.currentPlayer.draw(game_state.deck.draw_cards(number_of_cards=input(draw_options)))
+                game_state.currentPlayer.draw(game_state.deck.draw_cards(number_of_cards=int(input(draw_options))))
 
             if move == PlayerMove.DRAW or move == PlayerMove.TAKE or move == PlayerMove.DRAW_ONE:
                 moves.remove(move)

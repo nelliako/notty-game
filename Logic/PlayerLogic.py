@@ -1,7 +1,6 @@
 from typing import List
 
-from Class.Classes import Deck
-from Class.Player import Player, PlayerMove
+from Class.Classes import Deck, Player, PlayerMove
 from Logic.ValidateCardLogic import contains_valid_group
 
 

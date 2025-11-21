@@ -1,8 +1,10 @@
 import random
 import sys
 import uuid
-from typing import List, Optional
+from collections import deque
+from typing import List, Optional, Deque
 
+from Class.Classes import PlayerType, Player, Deck, GameState, Card, create_deck, CardColor
 from Logic.ValidateCardLogic import contains_valid_group
 
 # Turns Tracking: tracks the state of the current turn to enforce "at most per turn" rules
@@ -106,15 +108,15 @@ def handle_action_swap(player: Player, deck: Deck, context: TurnContext):
         if user_input == len(player.hand):
             context.has_swapped_card = True
             deck.add_cards([card_drawn])
-            deck.shuffle()
+            deck.shuffle_deck()
             return
 
-        player.hand.take_card(card_drawn)
-        player.hand.remove_card(player.hand[user_input])
+        player.take_card(card_drawn)
+        player.lose_card(0)
         # Adding the removed card back to the deck
         deck.add_cards([player.hand[user_input]])
         # Shuffling the deck - do I need to create object Deck?
-        deck.shuffle() 
+        deck.shuffle_deck()
         context.has_swapped_card = True
         return
     
@@ -126,12 +128,12 @@ def handle_action_swap(player: Player, deck: Deck, context: TurnContext):
         card_index = random.randint(0, len(player.hand))
         # If we choose the drawn_card, the hand does not change
         if card_index != len(player.hand):
-            player.hand.remove_card(player.hand[card_index])
-            player.hand.take_card(card_drawn)
+            player.discard_card(Card())
+            player.take_card(card_drawn)
         # Adding the removed card back to the deck
         deck.add_cards([player.hand[card_index]])
         # Shuffling the deck - do I need to create object Deck?
-        deck.shuffle() 
+        deck.shuffle_deck()
         context.has_swapped_card = True
         return
 
@@ -139,15 +141,15 @@ def handle_action_swap(player: Player, deck: Deck, context: TurnContext):
 # Actions 4: discard group - no constraints
 def handle_action_discard_group(player: Player, deck: Deck, context: TurnContext):
     valid_group = contains_valid_group(player.hand)
-    if valid_group != None:
+    if valid_group is not None:
         for card in valid_group:
             for index in range(len(player.hand)):
                 if card == player.hand[index]:
-                    player.hand.remove_card(player.hand[index])
+                    #player.discard_valid_cards(list())
                     # Adding the removed card back to the deck
-                    deck.add_cards(player.hand[index])
+                    deck.add_cards(player.discard_valid_cards(list()))
                     # Shuffling the deck - do I need to create object Deck?
-                    deck.shuffle() 
+                    deck.shuffle_deck()
                     break
 
 
@@ -161,19 +163,21 @@ def are_all_hands_non_empty(state: GameState):
 
 # (INCOMPLETE) Main game loop
 def run_game():
-    # 1. Setup 
-    game_state = GameState()
-    
+
     # Initialise Players
-    num_players = 3 
+    players: Deque[Player] = deque()
+    num_players = 3
     for _ in range(num_players):
-        game_state.players.append(Player(playerId=uuid.uuid4(), hand=[], type=PlayerType.COMPUTER))
-        
-    game_state.deck.shuffle()
+        players.append(Player(playerId=uuid.uuid4(), hand=[], type=PlayerType.COMPUTER))
+
+    # 1. Setup
+    deck: Deck = Deck()
+    game_state = GameState(players=players, deck=deck)
     
     # Deal Hands 
     for player in game_state.players:
-        player.draw(game_state.deck.deal())
+        cards_dealt = deck.draw_cards(4)
+        player.draw(cards_dealt)
 
     game_state.currentPlayer = game_state.players.popleft()
     turn_context = TurnContext()
@@ -184,7 +188,4 @@ def run_game():
     # while there is no winner -> while all hands are not empty
     #while are_all_hands_non_empty(game_state) == True:
 
-
-if __name__ == '__main__':
-    run_game()
 
