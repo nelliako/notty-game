@@ -1,7 +1,7 @@
 #this file contains the core functionalities for playerDecision
 # INPUTS: GameState --> An object with properties : players,currentPlayer,chosenPlayer,deck,state
-# OUTPUTS: chosenMove --> An object with properties : move, a integer parameter for move (drawn N, Steal from N player)\
-#                                                           currentplayer making the move
+# OUTPUTS: chosenMove --> A tuple with object playerMove and a parameter of typer integer : (playerMove, parameter)
+#                                                           
 #                        
 import pygame
 import random
