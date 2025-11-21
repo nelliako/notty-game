@@ -1,9 +1,9 @@
 import pygame
 import numpy as np
 import random
-import PlayerMove
 
-class Dummy():
+
+class playerDummy():
     def __init__(self,current_player, valid_moves):
         self.current_player = current_player
         self.available_moves=valid_moves
