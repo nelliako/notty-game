@@ -1,8 +1,12 @@
 import uuid
 from collections import deque
+from itertools import zip_longest
 from typing import Deque, List
 
-from Class.Classes import Deck, GameState, State, DrawOptions, Player, PlayerMove, PlayerType
+import pygame
+
+from Class.Classes import Deck, GameState, State, DrawOptions, Player, PlayerMove, PlayerType, Card
+from Logic.ValidateCardLogic import contains_valid_group
 
 
 def determine_player_draw_options(max_card_draw_size: int) -> List[DrawOptions]:
@@ -16,8 +20,23 @@ def determine_player_draw_options(max_card_draw_size: int) -> List[DrawOptions]:
         return []
 
 
+def select_card(card: Card, is_selected: bool, selected_card: List[Card]):
+    if is_selected & len(selected_card) == 1 :
+        selected_card[0] = card
+    elif is_selected & len(selected_card) == 0 :
+        selected_card.append(card)
+
+
+def select_cards(card: Card, is_selected: bool, selected_cards: List[Card]):
+    if is_selected:
+        selected_cards.append(card)
+    else:
+        selected_cards.remove(card)
+
+
+
 def game_loop():
-    number_of_players = 3 # int(input("How many players? "))
+    number_of_players = 3  # int(input("How many players? "))
 
     # initialize game state & shuffle the deck
     game_state = GameState(players=deque(), deck=Deck())
@@ -31,6 +50,7 @@ def game_loop():
         player.draw(game_state.deck.deal())
 
     while game_state.state == State.CONTINUE:
+        events = pygame.event.get()
         # check if any player has no cards in their hand
         if any([len(player.hand) == 0 for player in game_state.players]):
             game_state.state = State.WON
@@ -65,11 +85,52 @@ def game_loop():
 
             if move == PlayerMove.DRAW:
                 max_card_draw_size = 20 - len(game_state.currentPlayer.hand)
-                # TODO create a variable and maybe replace with a function
                 # draw move options
                 draw_options = determine_player_draw_options(max_card_draw_size)
 
                 game_state.currentPlayer.draw(game_state.deck.draw_cards(number_of_cards=int(input(draw_options))))
+
+            if move == PlayerMove.TAKE:
+                selected_card = []
+
+                while not selected_card:
+                    for player in game_state.players:
+                        player.update(events)
+                        if player.is_selected:
+                            game_state.chosenPlayer = player
+                            game_state.chosenPlayer.shuffle_hand()
+
+                    for card in game_state.chosenPlayer.hand:
+                        card.update(events)
+                        if card.is_selected:
+                            selected_card.append(card)
+                        elif card.is_selected == False & (card in selected_card):
+                            selected_card.remove(card)
+
+                game_state.chosenPlayer.lose_card(selected_card[0])
+                game_state.current_player.take_card(selected_card[0])
+
+            if move == PlayerMove.DRAW_ONE:
+                game_state.currentPlayer.draw(game_state.deck.draw_cards(1))
+
+            if move == PlayerMove.DISCARD_CARD:
+                discarded_card = game_state.current_player.discard_card()
+                game_state.deck.add_cards(discarded_card)
+                game_state.deck.shuffle_deck()
+
+            if move == PlayerMove.DISCARD_VALID_CARDS:
+                selected_cards = []
+                while contains_valid_group(selected_cards) is None:
+                    for card in game_state.currentPlayer.hand:
+                        card.update(events)
+
+                    selected_cards = [card for card in game_state.currentPlayer.hand if card.is_selected]
+                    if contains_valid_group(selected_cards) is None:
+                        print("Selected cards must be a valid group.")
+
+                game_state.current_player.discard_valid_cards(selected_cards)
+                game_state.deck.add_cards(selected_cards)
+                game_state.deck.shuffle_deck()
 
             if move == PlayerMove.DRAW or move == PlayerMove.TAKE or move == PlayerMove.DRAW_ONE:
                 moves.remove(move)

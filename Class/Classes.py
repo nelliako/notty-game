@@ -1,9 +1,11 @@
 import random
 import uuid
+
+import pygame
 from pygame import Color
 from enum import Enum, auto
 from dataclasses import dataclass, field
-from typing import List, Deque
+from typing import List, Deque, Callable
 from collections import deque
 
 
@@ -30,9 +32,33 @@ class CardColor(Enum):
 
 @dataclass
 class Card:
-    color: CardColor
-    number: int
+    def __init__(self, image, x, y, card_color, number):
+        super().__init__()
+        self.image = image
+        self.original_image = image
+        self.hover_image = None
+        self.clicked_image = None
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.on_hover = False
+        self.is_selected = False
+        self.card_color = card_color
+        self.number = number
 
+    def update(self, events: List[pygame.event.Event]):
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_buttons = pygame.mouse.get_pressed()
+
+        self.on_hover = self.rect.collidepoint(mouse_pos)
+
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONUP:
+                if self.rect.collidepoint(event.pos):
+                    self.is_selected = not self.is_selected
+
+        self.image = self.hover_image if self.on_hover else self.original_image
+        self.image = self.clicked_image if self.is_selected else self.original_image
 
 def create_deck():
     red_cards: List[Card] = [Card(CardColor.RED, number) for number in range(1, 10)]
@@ -43,6 +69,7 @@ def create_deck():
 
     all_cards = red_cards + green_cards + blue_cards + black_cards + yellow_cards
     all_cards = all_cards + all_cards
+    random.shuffle(all_cards)
     return Deque(all_cards)
 
 
@@ -98,9 +125,34 @@ class PlayerType(Enum):
 
 @dataclass
 class Player:
-    playerId: uuid.UUID
-    hand: List[Card]
-    type: PlayerType
+    def __init__(self, image, x, y, player_id, hand, player_type):
+        super().__init__()
+        self.image = image
+        self.original_image = image
+        self.hover_image = None
+        self.clicked_image = None
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.on_hover = False
+        self.is_selected = False
+        self.player_id: uuid.UUID = player_id
+        self.hand: List[Card] = hand
+        self.type: PlayerType = player_type
+
+    def update(self, events: List[pygame.event.Event]):
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_buttons = pygame.mouse.get_pressed()
+
+        self.on_hover = self.rect.collidepoint(mouse_pos)
+
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONUP:
+                if self.rect.collidepoint(event.pos):
+                    self.is_selected = not self.is_selected
+
+        self.image = self.hover_image if self.on_hover else self.original_image
+        self.image = self.clicked_image if self.is_selected else self.original_image
 
     def draw(self, cards_drawn: List[Card]):
         if len(cards_drawn) <= 20:
@@ -117,8 +169,8 @@ class Player:
     def lose_card(self, card: int) -> Card:
         return self.hand.pop(card)
 
-    def discard_card(self, card: Card):
-        self.hand.remove(card)
+    def discard_card(self) -> Card:
+        return self.hand.pop()
 
     def discard_valid_cards(self, cards: List[Card]):
         for card in cards:
