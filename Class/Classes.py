@@ -9,7 +9,6 @@ from typing import List, Deque, Callable
 from collections import deque
 
 
-@dataclass
 class State(Enum):
     WON = auto()
     CONTINUE = auto()
@@ -21,7 +20,6 @@ class DrawOptions(Enum):
     THREE = 3
 
 
-@dataclass
 class CardColor(Enum):
     RED = Color(220, 20, 60, 255)
     GREEN = Color(0, 168, 107, 255)
@@ -32,19 +30,24 @@ class CardColor(Enum):
 
 @dataclass
 class Card:
-    def __init__(self, image, x, y, card_color, number):
+    def __init__(self, card_color, number):
         super().__init__()
-        self.image = image
-        self.original_image = image
+        # self.image = image
+        # self.original_image = image
         self.hover_image = None
         self.clicked_image = None
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+        # self.rect = self.image.get_rect()
+        # self.rect.x = x
+        # self.rect.y = y
         self.on_hover = False
         self.is_selected = False
         self.card_color = card_color
         self.number = number
+
+    # TODO(Darron from Nellia): make this type hashable for colours_identical. 
+
+    def __repr__(self):
+        return f"Card({self.card_color}, {self.number})"
 
     def update(self, events: List[pygame.event.Event]):
         mouse_pos = pygame.mouse.get_pos()
@@ -106,7 +109,6 @@ class Deck:
 #     state: State = State.CONTINUE
 
 
-@dataclass
 class PlayerMove(Enum):
     DRAW_ONE = auto()
     DRAW = auto()
@@ -117,7 +119,6 @@ class PlayerMove(Enum):
     END_TURN = auto()
 
 
-@dataclass
 class PlayerType(Enum):
     COMPUTER = auto()
     HUMAN = auto()
@@ -125,22 +126,31 @@ class PlayerType(Enum):
 
 @dataclass
 class Player:
+    '''
+    Image can be none, in this case no updates are made.
+    '''
     def __init__(self, image, x, y, player_id, hand, player_type):
         super().__init__()
         self.image = image
         self.original_image = image
         self.hover_image = None
         self.clicked_image = None
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+        if image is not None:
+            self.rect = self.image.get_rect()
+            self.rect.x = x
+            self.rect.y = y
         self.on_hover = False
         self.is_selected = False
         self.player_id: uuid.UUID = player_id
         self.hand: List[Card] = hand
         self.type: PlayerType = player_type
 
+    def __repr__(self):
+        return f"{self.player_id}"
+
     def update(self, events: List[pygame.event.Event]):
+        if self.image is None:
+            return
         mouse_pos = pygame.mouse.get_pos()
         mouse_buttons = pygame.mouse.get_pressed()
 

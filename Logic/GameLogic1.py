@@ -1,9 +1,9 @@
 import random
 import sys
 import uuid
+from typing import List, Optional
 from collections import deque
-from typing import List, Optional, Deque
-
+from Class.Classes import Deck, GameState, State, DrawOptions, Player, PlayerMove, PlayerType
 from Class.Classes import PlayerType, Player, Deck, GameState, Card, create_deck, CardColor
 from Logic.ValidateCardLogic import contains_valid_group
 
@@ -64,17 +64,18 @@ def handle_action_steal(current_player: Player, opponents: List[Player], context
     
     if not valid_targets:
         print('No opponents have cards to steal!')
-        return
+        return None
 
     # Select target
-    target: Player = random.choice(valid_targets) 
+    # TODO: prompt current player to choose the user BUT leave this line for a computer player type
+    target: Player = random.choice(valid_targets)
     
     # Select Random Card from Target (mimics shuffling hand face down)
     card_index = random.randint(0, len(target.hand) - 1)
     stolen_card = target.lose_card(card_index)
     
     current_player.take_card(stolen_card)
-    print(f'Stole a card from Player {target.playerId}')
+    print(f'Stole a card from Player {target.player_id}')
     
     context.has_stolen_card = True
 
@@ -93,6 +94,7 @@ def handle_action_swap(player: Player, deck: Deck, context: TurnContext):
     print(f'You drew {card_drawn}')
 
     # Choose the card to discard when player is human
+
     if player.type == PlayerType.HUMAN:
         print('Which card do you want to discard?')
 
@@ -112,10 +114,10 @@ def handle_action_swap(player: Player, deck: Deck, context: TurnContext):
             return
 
         player.take_card(card_drawn)
-        player.lose_card(0)
+        player.lose_card(user_input)
         # Adding the removed card back to the deck
         deck.add_cards([player.hand[user_input]])
-        # Shuffling the deck - do I need to create object Deck?
+        # Shuffling the deck 
         deck.shuffle_deck()
         context.has_swapped_card = True
         return
@@ -128,11 +130,11 @@ def handle_action_swap(player: Player, deck: Deck, context: TurnContext):
         card_index = random.randint(0, len(player.hand))
         # If we choose the drawn_card, the hand does not change
         if card_index != len(player.hand):
-            player.discard_card(Card())
+            player.lose_card(card_index)
             player.take_card(card_drawn)
         # Adding the removed card back to the deck
         deck.add_cards([player.hand[card_index]])
-        # Shuffling the deck - do I need to create object Deck?
+        # Shuffling the deck 
         deck.shuffle_deck()
         context.has_swapped_card = True
         return
@@ -148,27 +150,27 @@ def handle_action_discard_group(player: Player, deck: Deck, context: TurnContext
                     #player.discard_valid_cards(list())
                     # Adding the removed card back to the deck
                     deck.add_cards(player.discard_valid_cards(list()))
-                    # Shuffling the deck - do I need to create object Deck?
+                    # Shuffling the deck 
                     deck.shuffle_deck()
                     break
 
 
 # Checking for the while condition
-def are_all_hands_non_empty(state: GameState):
+def all_hands_non_empty(state: GameState):
     for player in state.players:
         if len(player.hand) == 0:
             return False
 
     return True
 
-# (INCOMPLETE) Main game loop
+# Main game loop
 def run_game():
 
     # Initialise Players
-    players: Deque[Player] = deque()
+    players = deque()
     num_players = 3
     for _ in range(num_players):
-        players.append(Player(playerId=uuid.uuid4(), hand=[], type=PlayerType.COMPUTER))
+        players.append(Player(image=None, x=0, y=0, player_id=uuid.uuid4(), hand=[], player_type=PlayerType.HUMAN))
 
     # 1. Setup
     game_state = GameState(players=players, deck=Deck())
@@ -177,13 +179,83 @@ def run_game():
     for player in game_state.players:
         player.draw(game_state.deck.draw_cards(4))
 
-    game_state.currentPlayer = game_state.players.popleft()
+    print("Game Start")
     turn_context = TurnContext()
 
-    print("Game Start")
+    # Passing turns from player to player
+    while True:
+
+        game_state.current_player = game_state.players.popleft()
+        # Resetting flags 
+        turn_context.reset()
+        opponents = game_state.players 
+
+        # ACTION PHASE MENU
+        user_input = 0
+        # While there is no winner -> while all hands are not empty
+        while all_hands_non_empty(game_state) and (user_input != 5 and user_input != 6):
+            # Show the state to the user - current player, their hand and other players' hands
+            print(f"current player: {game_state.current_player.type}, hand {game_state.current_player.hand}")
+            for player in opponents:
+                print(f"opponent: {player.type}, hand {player.hand}")
+
+            
+            # If none of the actions with constraints have been exhausted
+            if turn_context.has_drawn_cards == False and turn_context.has_stolen_card == False and turn_context.has_swapped_card == False:
+                user_input = int(input('Choose your action - 1: Draw cards 2: Steal 3: Draw and Discard 4: Discard 5: Pass 6: End turn\n'))
+
+            elif turn_context.has_drawn_cards == True and turn_context.has_stolen_card == False and turn_context.has_swapped_card == False:
+                user_input = int(input('Choose your action - 2: Steal 3: Draw and Discard 4: Discard 5: Pass 6: End turn\n'))
+
+            elif turn_context.has_drawn_cards == False and turn_context.has_stolen_card == True and turn_context.has_swapped_card == False:
+                user_input = int(input('Choose your action - 1: Draw cards 3: Draw and Discard 4: Discard 5: Pass 6: End turn\n'))
+
+            elif turn_context.has_drawn_cards == False and turn_context.has_stolen_card == False and turn_context.has_swapped_card == True:
+                user_input = int(input('Choose your action - 1: Draw cards 2: Steal 4: Discard 5: Pass 6: End turn\n'))
+
+            elif turn_context.has_drawn_cards == True and turn_context.has_stolen_card == True and turn_context.has_swapped_card == False:
+                user_input = int(input('Choose your action - 3: Draw and Discard 4: Discard 5: Pass 6: End turn\n'))
+
+            elif turn_context.has_drawn_cards == False and turn_context.has_stolen_card == True and turn_context.has_swapped_card == True:
+                user_input = int(input('Choose your action - 1: Draw cards 4: Discard 5: Pass 6: End turn\n'))
+            # If all of the actions with constraints have been exhausted    
+            elif turn_context.has_drawn_cards == True and turn_context.has_stolen_card == True and turn_context.has_swapped_card == True:
+                user_input = int(input('Choose your action - 4: Discard 5: Pass 6: End turn\n'))
 
 
-    # while there is no winner -> while all hands are not empty
-    #while are_all_hands_non_empty(game_state) == True:
+            # TAKING ACTIONS ACCORDING TO INPUT
+        
+            if user_input == 1:
+            
+                handle_action_draw_3(game_state.current_player, game_state.deck, turn_context)
+                # Go back to the action phase menu
+            if user_input == 2:
+                handle_action_steal(game_state.current_player, opponents, turn_context)
+
+            if user_input == 3:
+                handle_action_swap(game_state.current_player, game_state.deck, turn_context)
+
+            if user_input == 4:
+                handle_action_discard_group(game_state.current_player, game_state.deck, turn_context)
+                    # checking the win
+                    # returning to the action phase
+        # Check whose hand is exactly non empty and announce the winner
+        is_endgame = False
+        if all_hands_non_empty(game_state) == False:
+            for player in game_state.players:
+                if len(player.hand) == 0:
+                    print(f'The winner is {player}')
+                    is_endgame = True
+                    break
+        if is_endgame:
+            break
+        # Adding current_player back to the deck on the right
+        game_state.players.append(game_state.current_player)
+
+
+
+
+
+
 
 
