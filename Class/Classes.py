@@ -63,6 +63,7 @@ class Card:
         self.image = self.hover_image if self.on_hover else self.original_image
         self.image = self.clicked_image if self.is_selected else self.original_image
 
+
 def create_deck():
     red_cards: List[Card] = [Card(CardColor.RED, number) for number in range(1, 10)]
     green_cards: List[Card] = [Card(CardColor.GREEN, number) for number in range(1, 10)]
@@ -100,6 +101,7 @@ class Deck:
     def add_cards(self, cards_to_add: List[Card]):
         self.cards.extend(cards_to_add)
 
+
 # @dataclass
 # class GameState:
 #     players: Deque[Player] # 0. Current Player 1. Next/Previous Player 2. Previous Player
@@ -120,7 +122,9 @@ class PlayerMove(Enum):
 
 
 class PlayerType(Enum):
-    COMPUTER = auto()
+    COMPUTER_EASY = auto()
+    COMPUTER_MEDIUM = auto()
+    COMPUTER_HARD = auto()
     HUMAN = auto()
 
 
@@ -184,7 +188,9 @@ class Player:
 
     def discard_valid_cards(self, cards: List[Card]):
         for card in cards:
-            self.hand.remove(card)  # TODO Confirm if remove(card) only removes one instance of the card if there are two
+            self.hand.remove(
+                card)  # TODO Confirm if remove(card) only removes one instance of the card if there are two
+
 
 class GameState:
     def __init__(self, players: Deque[Player], deck: Deck):

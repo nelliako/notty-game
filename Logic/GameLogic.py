@@ -7,6 +7,7 @@ import pygame
 
 from Class.Classes import Deck, GameState, State, DrawOptions, Player, PlayerMove, PlayerType, Card
 from Logic.ValidateCardLogic import contains_valid_group
+from optimal_player_move.player_easy import get_random_move
 
 
 def determine_player_draw_options(max_card_draw_size: int) -> List[DrawOptions]:
@@ -21,9 +22,9 @@ def determine_player_draw_options(max_card_draw_size: int) -> List[DrawOptions]:
 
 
 def select_card(card: Card, is_selected: bool, selected_card: List[Card]):
-    if is_selected & len(selected_card) == 1 :
+    if is_selected & len(selected_card) == 1:
         selected_card[0] = card
-    elif is_selected & len(selected_card) == 0 :
+    elif is_selected & len(selected_card) == 0:
         selected_card.append(card)
 
 
@@ -34,7 +35,6 @@ def select_cards(card: Card, is_selected: bool, selected_cards: List[Card]):
         selected_cards.remove(card)
 
 
-
 def game_loop():
     number_of_players = 3  # int(input("How many players? "))
 
@@ -43,11 +43,19 @@ def game_loop():
     game_state.deck.shuffle_deck()
 
     for i in range(number_of_players):
-        game_state.players.append(Player(playerId=uuid.uuid4(), type=PlayerType.COMPUTER))
+        game_state.players.append(Player(player_id=uuid.uuid4(), hand=[], player_type=PlayerType.COMPUTER_EASY))
 
     # deal 4 cards to each player
     for player in game_state.players:
-        player.draw(game_state.deck.deal())
+        player.draw(game_state.deck.draw_cards(4))
+
+    # TODO implement functions for each player type to select moves
+    player_moves_map = {
+        PlayerType.COMPUTER_EASY: get_random_move, # TODO placeholder function
+        PlayerType.COMPUTER_MEDIUM: get_random_move, # TODO placeholder function
+        PlayerType.COMPUTER_HARD: get_random_move, # TODO placeholder function
+        PlayerType.HUMAN: get_random_move, # TODO placeholder function
+    }
 
     while game_state.state == State.CONTINUE:
         events = pygame.event.get()
@@ -79,7 +87,9 @@ def game_loop():
         ]
 
         moves: List[PlayerMove] = available_moves if len(game_state.currentPlayer.hand) < 20 else restricted_moves
-        move: PlayerMove = input("Select a move: ")  # TODO user input
+
+        make_move = player_moves_map[game_state.currentPlayer.type]
+        move, number_of_cards = make_move(player=game_state.currentPlayer, moves=moves)
 
         while move != PlayerMove.END_TURN or move != PlayerMove.PASS or len(moves) != 0:
 
@@ -87,8 +97,10 @@ def game_loop():
                 max_card_draw_size = 20 - len(game_state.currentPlayer.hand)
                 # draw move options
                 draw_options = determine_player_draw_options(max_card_draw_size)
+                if game_state.currentPlayer.type == PlayerType.HUMAN:
+                    number_of_cards = int(input(draw_options))
 
-                game_state.currentPlayer.draw(game_state.deck.draw_cards(number_of_cards=int(input(draw_options))))
+                game_state.currentPlayer.draw(game_state.deck.draw_cards(number_of_cards=number_of_cards))
 
             if move == PlayerMove.TAKE:
                 selected_card = []
@@ -115,7 +127,7 @@ def game_loop():
 
             if move == PlayerMove.DISCARD_CARD:
                 discarded_card = game_state.current_player.discard_card()
-                game_state.deck.add_cards(discarded_card)
+                game_state.deck.add_cards([discarded_card])
                 game_state.deck.shuffle_deck()
 
             if move == PlayerMove.DISCARD_VALID_CARDS:
