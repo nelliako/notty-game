@@ -1,7 +1,6 @@
 from typing import Any, List
 
 import pygame
-import numpy as np
 import random
 
 from Class.Classes import Player, PlayerMove

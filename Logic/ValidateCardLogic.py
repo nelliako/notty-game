@@ -1,9 +1,12 @@
 from typing import List, Dict
-from Class.Classes import Card, CardColor, Player
+
+from Class.Classes import Card, CardColor
 
 
 def colours_identical(cards: List[Card]) -> list[Card] | None:
+     # number of cards per color
     colors = {}
+    # stores card for each color & number
     colors_cards: Dict[CardColor, Dict[int, Card]] = {}
 
     for card in set(cards):
@@ -11,7 +14,7 @@ def colours_identical(cards: List[Card]) -> list[Card] | None:
         number = card.number
 
         if color not in colors_cards:
-            colors[color] = []
+            colors[color] = 1
             colors_cards[color] = {}
         else:
             colors[color] = colors[color] + 1

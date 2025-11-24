@@ -1,12 +1,12 @@
 import random
 import uuid
+from collections import deque
+from dataclasses import dataclass
+from enum import Enum, auto
+from typing import List, Deque
 
 import pygame
 from pygame import Color
-from enum import Enum, auto
-from dataclasses import dataclass, field
-from typing import List, Deque, Callable
-from collections import deque
 
 
 class State(Enum):
@@ -41,13 +41,21 @@ class Card:
         # self.rect.y = y
         self.on_hover = False
         self.is_selected = False
-        self.card_color = card_color
+        self.color = card_color
         self.number = number
 
     # TODO(Darron from Nellia): make this type hashable for colours_identical. 
 
     def __repr__(self):
-        return f"Card({self.card_color}, {self.number})"
+        return f"Card({self.color}, {self.number})"
+
+    def __eq__(self, other):
+        if not isinstance(other, Card):
+            return NotImplemented
+        return self.color == other.color and self.number == other.number
+
+    def __hash__(self):
+        return hash((self.color, self.number))
 
     def update(self, events: List[pygame.event.Event]):
         mouse_pos = pygame.mouse.get_pos()
@@ -101,16 +109,6 @@ class Deck:
     def add_cards(self, cards_to_add: List[Card]):
         self.cards.extend(cards_to_add)
 
-
-# @dataclass
-# class GameState:
-#     players: Deque[Player] # 0. Current Player 1. Next/Previous Player 2. Previous Player
-#     currentPlayer: Player
-#     chosenPlayer: Player
-#     deck: Deck = Deck.create()
-#     state: State = State.CONTINUE
-
-
 class PlayerMove(Enum):
     DRAW_ONE = auto()
     DRAW = auto()
@@ -133,7 +131,7 @@ class Player:
     '''
     Image can be none, in this case no updates are made.
     '''
-    def __init__(self, image, x, y, player_id, hand, player_type):
+    def __init__(self, player_id, hand, player_type, name, image = None, x = None, y = None):
         super().__init__()
         self.image = image
         self.original_image = image
@@ -146,6 +144,7 @@ class Player:
         self.on_hover = False
         self.is_selected = False
         self.player_id: uuid.UUID = player_id
+        self.name = name
         self.hand: List[Card] = hand
         self.type: PlayerType = player_type
 
@@ -196,6 +195,6 @@ class GameState:
     def __init__(self, players: Deque[Player], deck: Deck):
         self.players = players
         self.current_player: Player = None
-        self.chosenPlayer: Player = None
+        self.chosen_player: Player = None
         self.deck = deck
         self.state = State.CONTINUE

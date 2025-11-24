@@ -1,13 +1,11 @@
 import uuid
 from collections import deque
-from itertools import zip_longest
-from typing import Deque, List
+from typing import List
 
-import pygame
-
-from Class.Classes import Deck, GameState, State, DrawOptions, Player, PlayerMove, PlayerType, Card
-from Logic.ValidateCardLogic import contains_valid_group
-from optimal_player_move.player_easy import get_random_move
+from Class.Classes import Deck, GameState, DrawOptions, Player, PlayerMove, PlayerType, Card
+from Logic.utils import handle_action_draw_3, handle_action_steal, handle_action_swap, handle_action_discard_group, \
+    all_hands_non_empty, get_permissible_moves
+from computerLogic.playerDecision import EASY, MEDIUM, HARD
 
 
 def determine_player_draw_options(max_card_draw_size: int) -> List[DrawOptions]:
@@ -43,111 +41,88 @@ def game_loop():
     game_state.deck.shuffle_deck()
 
     for i in range(number_of_players):
-        game_state.players.append(Player(player_id=uuid.uuid4(), hand=[], player_type=PlayerType.COMPUTER_EASY))
+        game_state.players.append(Player(player_id=uuid.uuid4(), hand=[], player_type=PlayerType.COMPUTER_EASY, name=f"Player {i}"))
 
     # deal 4 cards to each player
     for player in game_state.players:
         player.draw(game_state.deck.draw_cards(4))
 
-    # TODO implement functions for each player type to select moves
-    player_moves_map = {
-        PlayerType.COMPUTER_EASY: get_random_move, # TODO placeholder function
-        PlayerType.COMPUTER_MEDIUM: get_random_move, # TODO placeholder function
-        PlayerType.COMPUTER_HARD: get_random_move, # TODO placeholder function
-        PlayerType.HUMAN: get_random_move, # TODO placeholder function
-    }
-
-    while game_state.state == State.CONTINUE:
-        events = pygame.event.get()
-        # check if any player has no cards in their hand
-        if any([len(player.hand) == 0 for player in game_state.players]):
-            game_state.state = State.WON
-            # TODO Say which player won
-            break
+    turn = 0
+    while all_hands_non_empty(game_state):
+        turn += 1
+        # events = pygame.event.get()
 
         # set the current player to the first player and remove current player from the players list
-        game_state.currentPlayer = game_state.players.popleft()
+        game_state.current_player = game_state.players.popleft()
 
-        available_moves: List[PlayerMove] = [
-            PlayerMove.DRAW,
-            PlayerMove.TAKE,
-            PlayerMove.DRAW_ONE,
-            PlayerMove.DISCARD_CARD,
-            PlayerMove.DISCARD_VALID_CARDS,
-            PlayerMove.PASS,
-            PlayerMove.END_TURN
-        ]
+        print(f"It's {game_state.current_player.name} turn. It's now turn {turn}.")
+        moves = get_permissible_moves(game_state)
 
-        restricted_moves: List[PlayerMove] = [
-            PlayerMove.DRAW_ONE,
-            PlayerMove.DISCARD_CARD,
-            PlayerMove.DISCARD_VALID_CARDS,
-            PlayerMove.PASS,
-            PlayerMove.END_TURN
-        ]
+        player_moves_map = {
+            PlayerType.COMPUTER_EASY: EASY(game_state, moves),
+            PlayerType.COMPUTER_MEDIUM: MEDIUM(game_state, moves),
+            PlayerType.COMPUTER_HARD: HARD(game_state, moves),
+            PlayerType.HUMAN: None,
+        }
 
-        moves: List[PlayerMove] = available_moves if len(game_state.currentPlayer.hand) < 20 else restricted_moves
+        computer_player_decision = player_moves_map[game_state.current_player.type]
 
-        make_move = player_moves_map[game_state.currentPlayer.type]
-        move, number_of_cards = make_move(player=game_state.currentPlayer, moves=moves)
+        if game_state.current_player.type == PlayerType.HUMAN:
+            for index in range(len(moves)):
+                print(f"{index}: {moves[index]}")
+            chosen_move = int(input("Choose your move:"))
+            print(f"you chose move: {chosen_move}")
+            move = moves[chosen_move]
+        else:
+            move, _ = player_moves_map[game_state.current_player.type].choose()
+            print(f"{game_state.current_player.name} chose move: {move}")
 
-        while move != PlayerMove.END_TURN or move != PlayerMove.PASS or len(moves) != 0:
-
+        while True:
             if move == PlayerMove.DRAW:
-                max_card_draw_size = 20 - len(game_state.currentPlayer.hand)
-                # draw move options
-                draw_options = determine_player_draw_options(max_card_draw_size)
-                if game_state.currentPlayer.type == PlayerType.HUMAN:
-                    number_of_cards = int(input(draw_options))
-
-                game_state.currentPlayer.draw(game_state.deck.draw_cards(number_of_cards=number_of_cards))
+                handle_action_draw_3(game_state, computer_player_decision)
 
             if move == PlayerMove.TAKE:
-                selected_card = []
-
-                while not selected_card:
-                    for player in game_state.players:
-                        player.update(events)
-                        if player.is_selected:
-                            game_state.chosenPlayer = player
-                            game_state.chosenPlayer.shuffle_hand()
-
-                    for card in game_state.chosenPlayer.hand:
-                        card.update(events)
-                        if card.is_selected:
-                            selected_card.append(card)
-                        elif card.is_selected == False & (card in selected_card):
-                            selected_card.remove(card)
-
-                game_state.chosenPlayer.lose_card(selected_card[0])
-                game_state.current_player.take_card(selected_card[0])
+                handle_action_steal(game_state, computer_player_decision)
 
             if move == PlayerMove.DRAW_ONE:
-                game_state.currentPlayer.draw(game_state.deck.draw_cards(1))
-
-            if move == PlayerMove.DISCARD_CARD:
-                discarded_card = game_state.current_player.discard_card()
-                game_state.deck.add_cards([discarded_card])
-                game_state.deck.shuffle_deck()
+                handle_action_swap(game_state, computer_player_decision)
 
             if move == PlayerMove.DISCARD_VALID_CARDS:
-                selected_cards = []
-                while contains_valid_group(selected_cards) is None:
-                    for card in game_state.currentPlayer.hand:
-                        card.update(events)
-
-                    selected_cards = [card for card in game_state.currentPlayer.hand if card.is_selected]
-                    if contains_valid_group(selected_cards) is None:
-                        print("Selected cards must be a valid group.")
-
-                game_state.current_player.discard_valid_cards(selected_cards)
-                game_state.deck.add_cards(selected_cards)
-                game_state.deck.shuffle_deck()
+                handle_action_discard_group(game_state.current_player, game_state.deck)
 
             if move == PlayerMove.DRAW or move == PlayerMove.TAKE or move == PlayerMove.DRAW_ONE:
                 moves.remove(move)
 
-            move = input("Select a move: ")
+            if game_state.current_player.type == PlayerType.HUMAN:
+                for index in range(len(moves)):
+                    print(f"{index}: {moves[index]}")
+                chosen_move = int(input("line 96: Choose your move:"))
+                print(f"you chose move: {chosen_move}")
+                move = moves[chosen_move]
+            else:
+                move, _ = player_moves_map[game_state.current_player.type].choose()
+                print(f"{game_state.current_player.name} chose move: {move}")
+                if move == PlayerMove.PASS or move == PlayerMove.END_TURN:
+                    break
+
+            if not all_hands_non_empty(game_state):
+                break
+            
+            # END OF MOVE WHILE LOOP
 
         # add current player to the end of the `players` list
-        game_state.players.append(game_state.currentPlayer)
+        game_state.players.append(game_state.current_player)
+
+        if not all_hands_non_empty(game_state):
+            break
+        
+        # END OF TURN WHILE LOOP
+
+    if not all_hands_non_empty(game_state):
+        for player in game_state.players:
+            if len(player.hand) == 0:
+                print(f'The winner is {player}')
+                # is_endgame = True
+                break
+
+
