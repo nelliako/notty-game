@@ -61,31 +61,52 @@ class menuScreen(screenBase):
         button_surf = pygame.transform.scale(button_surf, (200, 50))
 
         button_font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 20)
-        self.play_button = Button(button_surf, 640, 450, "Play", button_font)
-        self.options_button = Button(button_surf, 640, 530, "Options", button_font)
-        self.exit_button = Button(button_surf, 640, 610, "Exit", button_font)
+        self.play_button = Button(button_surf, 640, 450, "Play", button_font, self.navigate_to_play_screen)
+        self.options_button = Button(button_surf, 640, 530, "Options", button_font, self.navigate_to_options_screen)
+        self.exit_button = Button(button_surf, 640, 610, "Exit", button_font, self.navigate_to_exit_screen)
 
     def process_event(self, event):
         global current_screen
+        # if event.type == pygame.MOUSEBUTTONDOWN:
+        # checkForInput
+        # click_pos = event.pos
+
         if event.type == pygame.MOUSEBUTTONDOWN:
-            #checkForInput
-            click_pos = event.pos
+            for button in [self.play_button, self.options_button, self.exit_button]:
+                if button.rect.collidepoint(event.pos):
+                    screen = button.handle_event(event)
+                    if screen is not None:
+                        current_screen = screen
+                        print(f"current screen:  {current_screen}")
+                        self.close = True
+                        return
 
-            if self.play_button.checkForInput(click_pos):
-                current_screen = playScreen(self.screen, self.game_state)
-                self.close = True
-                return
 
-            if self.options_button.checkForInput(click_pos):
-                current_screen = opSlectScreen(self.screen, self.game_state)
-                self.close = True
-                return
+            # current_screen = playScreen(self.screen, self.game_state)
+            # self.close = True
+            # return
 
-            if self.exit_button.checkForInput(click_pos):
-                print("EXIT CLICKED")
-                self.close = True
-                current_screen = None
-                return
+            # if self.options_button.handle_event(click_pos):
+            #     current_screen = OptionSelectScreen(self.screen, self.game_state)
+            #     self.close = True
+            #     return
+            #
+            # if self.exit_button.handle_event(click_pos):
+            #     print("EXIT CLICKED")
+            #     self.close = True
+            #     current_screen = None
+            #     return
+
+    def navigate_to_play_screen(self):
+        print("Navigate to Play screen")
+        return playScreen(self.screen, self.game_state)
+
+    def navigate_to_options_screen(self):
+        print("Navigate to Options screen")
+        return OptionSelectScreen(self.screen, self.game_state)
+
+    def navigate_to_exit_screen(self):
+        return None
 
     def update_objects(self):
         mouse_pos = pygame.mouse.get_pos()
@@ -101,6 +122,7 @@ class menuScreen(screenBase):
         self.play_button.update(self.screen)
         self.options_button.update(self.screen)
         self.exit_button.update(self.screen)
+
 
 class playScreen(screenBase):
     def __init__(self, screen, game_state):
@@ -130,28 +152,25 @@ class playScreen(screenBase):
         self.overlay = pygame.Surface((1280, 720), pygame.SRCALPHA)
         self.overlay.fill((0, 0, 0, 200))
 
-
-
     def process_event(self, event):
         global current_screen
         if event.type == pygame.MOUSEBUTTONDOWN:
             click_pos = event.pos
 
             if self.is_paused:
-                if self.resume_button.checkForInput(click_pos):
+                if self.resume_button.handle_event(click_pos):
                     self.is_paused = False
-                elif self.restart_button.checkForInput(click_pos):
+                elif self.restart_button.handle_event(click_pos):
                     current_screen = playScreen(self.screen)
                     self.close = True
                     return
-                elif self.backMenu_button.checkForInput(click_pos):
+                elif self.backMenu_button.handle_event(click_pos):
                     current_screen = menuScreen(self.screen)
                     self.close = True
                     return
             else:
-                if self.pause_button.checkForInput(click_pos):
+                if self.pause_button.handle_event(click_pos):
                     self.is_paused = True
-
 
             # if self.back_button.checkForInput(click_pos):
             #     current_screen = menuScreen(self.screen)
@@ -161,7 +180,6 @@ class playScreen(screenBase):
             # if self.confirm_button.checkForInput(click_pos):
             #     self.close = True
             #     return
-
 
     def update_objects(self):
         mouse_pos = pygame.mouse.get_pos()
@@ -203,7 +221,7 @@ class playScreen(screenBase):
             self.backMenu_button.update(self.screen)
 
 
-class opSlectScreen(screenBase):
+class OptionSelectScreen(screenBase):
     def __init__(self, screen, game_state: GameState):
         super().__init__(screen)
         self.game_state = game_state
@@ -213,7 +231,8 @@ class opSlectScreen(screenBase):
         self.select_frame = imageObject("ui/images/selectFrame.png", 640, 365, 'center')
 
         self.title_options = textObject(520, 135, "Options", "ui/Font/Minecraftia-Regular.ttf", 35, 'Black', 'center')
-        self.title_level = textObject(480, 200, "Choose level", "ui/Font/Minecraftia-Regular.ttf", 35, 'Black', 'topleft')
+        self.title_level = textObject(480, 200, "Choose level", "ui/Font/Minecraftia-Regular.ttf", 35, 'Black',
+                                      'topleft')
         self.title_players = textObject(480, 390, "Players", "ui/Font/Minecraftia-Regular.ttf", 35, 'Black', 'topleft')
 
         greenButton_surf = pygame.image.load("ui/buttonImages/greenButton.png").convert_alpha()
@@ -224,29 +243,50 @@ class opSlectScreen(screenBase):
         orangeButton_surf = pygame.transform.scale(orangeButton_surf, (100, 30))
 
         button_font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 13)
-        self.confirm_button = Button(orangeButton_surf, 660, 140, "Confirm", button_font)
-        self.back_button = Button(orangeButton_surf, 770, 140, "Back", button_font)
-        self.easy_button = Button(greenButton_surf, 520, 310, "Easy", button_font)
-        self.medium_button = Button(blueButton_surf, 630, 310, "Medium", button_font)
-        self.difficult_button = Button(redButton_surf, 740, 310, "Difficult", button_font)
+        self.confirm_button = Button(orangeButton_surf, 660, 140, "Confirm", button_font, on_click=self.navigate_to_menu_screen)
+        self.back_button = Button(orangeButton_surf, 770, 140, "Back", button_font, on_click=self.navigate_to_menu_screen)
+        self.easy_button = Button(greenButton_surf, 520, 310, "Easy", button_font, on_click=self.set_difficult_easy)
+        self.medium_button = Button(blueButton_surf, 630, 310, "Medium", button_font, on_click=self.set_difficult_medium)
+        self.difficult_button = Button(redButton_surf, 740, 310, "Difficult", button_font, on_click=self.set_difficult_hard)
 
-        self.player1_button = Button(yellowButton_surf, 520, 500, "1 player", button_font, on_click= lambda : self.game_state.set_players(1))
-        self.player2_button = Button(yellowButton_surf, 630, 500, "2 players", button_font, on_click= lambda : self.game_state.set_players(2))
-        self.player3_button = Button(yellowButton_surf, 740, 500, "3 players", button_font, on_click= lambda : self.game_state.set_players(3))
+        self.player1_button = Button(yellowButton_surf, 520, 500, "1 player", button_font, on_click=self.set_1_players)
+        self.player2_button = Button(yellowButton_surf, 630, 500, "2 players", button_font, on_click=self.set_2_players)
+        self.player3_button = Button(yellowButton_surf, 740, 500, "3 players", button_font, on_click=self.set_3_players)
+
+    def navigate_to_menu_screen(self):
+        return menuScreen(self.screen, self.game_state)
+
+
+    def set_difficult_easy(self):
+        self.game_state.set_player_difficulty(PlayerType.COMPUTER_EASY)
+
+    def set_difficult_medium(self):
+        self.game_state.set_player_difficulty(PlayerType.COMPUTER_MEDIUM)
+
+    def set_difficult_hard(self):
+        self.game_state.set_player_difficulty(PlayerType.COMPUTER_HARD)
+
+    def set_1_players(self):
+        self.game_state.set_players(1)
+
+    def set_2_players(self):
+        self.game_state.set_players(2)
+
+    def set_3_players(self):
+        self.game_state.set_players(3)
 
     def process_event(self, event):
         global current_screen
         if event.type == pygame.MOUSEBUTTONDOWN:
-            click_pos = event.pos
-
-            if self.back_button.checkForInput(click_pos):
-                current_screen = menuScreen(self.screen)
-                self.close = True
-                return
-
-            if self.confirm_button.checkForInput(click_pos):
-                self.close = True
-                return
+        #     click_pos = event.pos
+            for button in [self.confirm_button, self.back_button, self.easy_button, self.medium_button, self.difficult_button, self.player1_button, self.player2_button, self.player3_button]:
+                if button.rect.collidepoint(event.pos):
+                    screen = button.handle_event(event)
+                    if screen is not None:
+                        current_screen = screen
+                        print(f"current screen:  {current_screen}")
+                        self.close = True
+                        return
 
 
     def update_objects(self):
@@ -259,6 +299,7 @@ class opSlectScreen(screenBase):
         self.player1_button.changeColor(mouse_pos)
         self.player2_button.changeColor(mouse_pos)
         self.player3_button.changeColor(mouse_pos)
+
 
     def draw_objects(self):
         self.screen.fill((212, 212, 212))

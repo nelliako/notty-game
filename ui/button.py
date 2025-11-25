@@ -1,9 +1,11 @@
 import pygame
+import pygame
+
 from ui.objects import visualObject
 
 
 class Button(visualObject):
-    def __init__(self, image, x_pos, y_pos, text_input, font, on_click = None):
+    def __init__(self, image, x_pos, y_pos, text_input, font, on_click):
         super().__init__(x_pos, y_pos)
         self.image = image
         self.x_pos = x_pos
@@ -19,12 +21,12 @@ class Button(visualObject):
         screen.blit(self.image, self.rect)
         screen.blit(self.text, self.text_rect)
 
-    def checkForInput(self, position):
-        if self.rect.collidepoint(position):
+    def handle_event(self, event):
+        if self.rect.collidepoint(event.pos):
+            print(f"mouse event position: {event.pos}")
             if self.on_click is not None:
-                self.on_click()
-            return True
-        return False
+                print("button pressed")
+                return self.on_click()
 
     def changeColor(self, position):
         if self.rect.collidepoint(position):

@@ -200,9 +200,14 @@ class GameState:
         self.deck = deck
         self.state = State.CONTINUE
         self.number_players = 2
+        self.player_difficulty = PlayerType.COMPUTER_EASY
 
     def set_players(self, number):
         self.number_players = number
         print(f"Number of players selected: {self.number_players}!")
-    
+
+    def set_player_difficulty(self, difficulty):
+        self.player_difficulty = difficulty
+        print(f"Player_difficulty selected: {self.player_difficulty}!")
+
 
