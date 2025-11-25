@@ -3,7 +3,7 @@ from ui.objects import visualObject
 
 
 class Button(visualObject):
-    def __init__(self, image, x_pos, y_pos, text_input, font):
+    def __init__(self, image, x_pos, y_pos, text_input, font, on_click = None):
         super().__init__(x_pos, y_pos)
         self.image = image
         self.x_pos = x_pos
@@ -13,6 +13,7 @@ class Button(visualObject):
         self.rect = self.image.get_rect(center=(self.x_pos, self.y_pos))
         self.text = self.font.render(self.text_input, True, 'Black')
         self.text_rect = self.text.get_rect(center=(self.x_pos, self.y_pos))
+        self.on_click = on_click
 
     def update(self, screen):
         screen.blit(self.image, self.rect)
@@ -20,6 +21,8 @@ class Button(visualObject):
 
     def checkForInput(self, position):
         if self.rect.collidepoint(position):
+            if self.on_click is not None:
+                self.on_click()
             return True
         return False
 

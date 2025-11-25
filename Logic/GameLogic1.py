@@ -9,8 +9,7 @@ from computerLogic.playerDecision import EASY, MEDIUM, HARD
 def run_game():
     # Initialise Players
     players = deque()
-    num_players = 3
-    for i in range(num_players):
+    for i in range(game_state.number_players):
         players.append(Player(image=None, x=0, y=0, player_id=uuid.uuid4(), hand=[], player_type=PlayerType.HUMAN, name=f"Player {i}"))
 
     # 1. Setup

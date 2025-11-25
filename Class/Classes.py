@@ -68,6 +68,7 @@ class Card:
                 if self.rect.collidepoint(event.pos):
                     self.is_selected = not self.is_selected
 
+
         self.image = self.hover_image if self.on_hover else self.original_image
         self.image = self.clicked_image if self.is_selected else self.original_image
 
@@ -198,3 +199,10 @@ class GameState:
         self.chosen_player: Player = None
         self.deck = deck
         self.state = State.CONTINUE
+        self.number_players = 2
+
+    def set_players(self, number):
+        self.number_players = number
+        print(f"Number of players selected: {self.number_players}!")
+    
+

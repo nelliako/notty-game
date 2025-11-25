@@ -3,6 +3,7 @@ import sys
 from ui.button import Button
 from ui.objects import imageObject
 from ui.text_object import textObject
+from Class.Classes import PlayerType, Player, Deck, GameState
 
 current_screen = None
 
@@ -48,17 +49,18 @@ class screenBase():
 
 
 class menuScreen(screenBase):
-    def __init__(self, screen):
+    def __init__(self, screen, game_state):
         super().__init__(screen)
+        self.game_state = game_state
 
-        self.title = textObject(640, 220, "NOTTY", "Font/Minecraftia-Regular.ttf", 250, 'Black', 'center')
+        self.title = textObject(640, 220, "NOTTY", "ui/Font/Minecraftia-Regular.ttf", 250, 'Black', 'center')
 
-        self.background_surf = pygame.image.load("images/Vector.png").convert_alpha()
+        self.background_surf = pygame.image.load("ui/images/Vector.png").convert_alpha()
 
-        button_surf = pygame.image.load("buttonImages/orangeButton.png").convert_alpha()
+        button_surf = pygame.image.load("ui/buttonImages/orangeButton.png").convert_alpha()
         button_surf = pygame.transform.scale(button_surf, (200, 50))
 
-        button_font = pygame.font.Font("Font/Minecraftia-Regular.ttf", 20)
+        button_font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 20)
         self.play_button = Button(button_surf, 640, 450, "Play", button_font)
         self.options_button = Button(button_surf, 640, 530, "Options", button_font)
         self.exit_button = Button(button_surf, 640, 610, "Exit", button_font)
@@ -70,12 +72,12 @@ class menuScreen(screenBase):
             click_pos = event.pos
 
             if self.play_button.checkForInput(click_pos):
-                current_screen = playScreen(self.screen)
+                current_screen = playScreen(self.screen, self.game_state)
                 self.close = True
                 return
 
             if self.options_button.checkForInput(click_pos):
-                current_screen = opSlectScreen(self.screen)
+                current_screen = opSlectScreen(self.screen, self.game_state)
                 self.close = True
                 return
 
@@ -101,18 +103,18 @@ class menuScreen(screenBase):
         self.exit_button.update(self.screen)
 
 class playScreen(screenBase):
-    def __init__(self, screen):
+    def __init__(self, screen, game_state):
         super().__init__(screen)
-
+        self.game_state = game_state
         self.is_paused = False
         center_x, center_y = 640, 360
 
-        self.background_surf = pygame.image.load("images/Vector.png").convert_alpha()
+        self.background_surf = pygame.image.load("ui/images/Vector.png").convert_alpha()
 
-        orangeButton_surf = pygame.image.load("buttonImages/orangeButton.png").convert_alpha()
+        orangeButton_surf = pygame.image.load("ui/buttonImages/orangeButton.png").convert_alpha()
         orangeButton_surf = pygame.transform.scale(orangeButton_surf, (100, 30))
 
-        button_font = pygame.font.Font("Font/Minecraftia-Regular.ttf", 13)
+        button_font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 13)
         self.draw_button = Button(orangeButton_surf, 475, 340, "Draw", button_font)
         self.steal_button = Button(orangeButton_surf, 585, 340, "Steal", button_font)
         self.trade_button = Button(orangeButton_surf, 695, 340, "Trade", button_font)
@@ -202,34 +204,35 @@ class playScreen(screenBase):
 
 
 class opSlectScreen(screenBase):
-    def __init__(self, screen):
+    def __init__(self, screen, game_state: GameState):
         super().__init__(screen)
+        self.game_state = game_state
 
-        self.background_surf = pygame.image.load("images/Vector.png").convert_alpha()
+        self.background_surf = pygame.image.load("ui/images/Vector.png").convert_alpha()
 
-        self.select_frame = imageObject("images/selectFrame.png", 640, 365, 'center')
+        self.select_frame = imageObject("ui/images/selectFrame.png", 640, 365, 'center')
 
-        self.title_options = textObject(520, 135, "Options", "Font/Minecraftia-Regular.ttf", 35, 'Black', 'center')
-        self.title_level = textObject(480, 200, "Choose level", "Font/Minecraftia-Regular.ttf", 35, 'Black', 'topleft')
-        self.title_players = textObject(480, 390, "Players", "Font/Minecraftia-Regular.ttf", 35, 'Black', 'topleft')
+        self.title_options = textObject(520, 135, "Options", "ui/Font/Minecraftia-Regular.ttf", 35, 'Black', 'center')
+        self.title_level = textObject(480, 200, "Choose level", "ui/Font/Minecraftia-Regular.ttf", 35, 'Black', 'topleft')
+        self.title_players = textObject(480, 390, "Players", "ui/Font/Minecraftia-Regular.ttf", 35, 'Black', 'topleft')
 
-        greenButton_surf = pygame.image.load("buttonImages/greenButton.png").convert_alpha()
-        blueButton_surf = pygame.image.load("buttonImages/blueButton.png").convert_alpha()
-        redButton_surf = pygame.image.load("buttonImages/redButton.png").convert_alpha()
-        yellowButton_surf = pygame.image.load("buttonImages/yellowButton.png").convert_alpha()
-        orangeButton_surf = pygame.image.load("buttonImages/orangeButton.png").convert_alpha()
+        greenButton_surf = pygame.image.load("ui/buttonImages/greenButton.png").convert_alpha()
+        blueButton_surf = pygame.image.load("ui/buttonImages/blueButton.png").convert_alpha()
+        redButton_surf = pygame.image.load("ui/buttonImages/redButton.png").convert_alpha()
+        yellowButton_surf = pygame.image.load("ui/buttonImages/yellowButton.png").convert_alpha()
+        orangeButton_surf = pygame.image.load("ui/buttonImages/orangeButton.png").convert_alpha()
         orangeButton_surf = pygame.transform.scale(orangeButton_surf, (100, 30))
 
-        button_font = pygame.font.Font("Font/Minecraftia-Regular.ttf", 13)
+        button_font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 13)
         self.confirm_button = Button(orangeButton_surf, 660, 140, "Confirm", button_font)
         self.back_button = Button(orangeButton_surf, 770, 140, "Back", button_font)
         self.easy_button = Button(greenButton_surf, 520, 310, "Easy", button_font)
         self.medium_button = Button(blueButton_surf, 630, 310, "Medium", button_font)
         self.difficult_button = Button(redButton_surf, 740, 310, "Difficult", button_font)
 
-        self.player1_button = Button(yellowButton_surf, 520, 500, "1 player", button_font)
-        self.player2_button = Button(yellowButton_surf, 630, 500, "2 players", button_font)
-        self.player3_button = Button(yellowButton_surf, 740, 500, "3 players", button_font)
+        self.player1_button = Button(yellowButton_surf, 520, 500, "1 player", button_font, on_click= lambda : self.game_state.set_players(1))
+        self.player2_button = Button(yellowButton_surf, 630, 500, "2 players", button_font, on_click= lambda : self.game_state.set_players(2))
+        self.player3_button = Button(yellowButton_surf, 740, 500, "3 players", button_font, on_click= lambda : self.game_state.set_players(3))
 
     def process_event(self, event):
         global current_screen
