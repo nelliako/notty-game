@@ -189,7 +189,8 @@ def handle_action_discard_group(player: Player, deck: Deck, context: TurnContext
             deck.add_cards(valid_group)
             # Shuffling the deck
             deck.shuffle_deck()
-            return
+            return True
+        return False
     else:
         # while contains_valid_group(selected_cards) is None:
         #     for card in game_state.current_player.hand:
@@ -203,6 +204,8 @@ def handle_action_discard_group(player: Player, deck: Deck, context: TurnContext
             player.discard_valid_cards(valid_group)
             deck.add_cards(valid_group)
             deck.shuffle_deck()
+            return True
+        return False
 
 
 # Checking for the while condition

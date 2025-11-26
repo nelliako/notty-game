@@ -158,7 +158,7 @@ class playScreen(screenBase):
         self.draw_button = Button(orangeButton_surf, 475, 340, "Draw", button_font, self.show_draw_options)
         self.steal_button = Button(orangeButton_surf, 585, 340, "Steal", button_font, self.activate_stealing)
         self.trade_button = Button(orangeButton_surf, 695, 340, "Trade", button_font, None)
-        self.discard_button = Button(orangeButton_surf, 805, 340, "Discard", button_font, None)
+        self.discard_button = Button(orangeButton_surf, 805, 340, "Discard", button_font, self.handle_discard)
         self.end_turn = Button(orangeButton_surf, 915, 340, "End Turn", button_font, self.trigger_end_turn)
 
         self.playForMe_button = Button(orangeButton_surf, 980, 40, "Play for me", button_font, None)
@@ -170,6 +170,9 @@ class playScreen(screenBase):
         self.backMenu_button = Button(orangeButton_surf, center_x, center_y + 80, "Menu", button_font, None)
         self.overlay = pygame.Surface((1280, 720), pygame.SRCALPHA)
         self.overlay.fill((0, 0, 0, 200))
+
+    def handle_discard(self):
+        handle_action_discard_group(self.game_state.current_player, self.game_state.deck, self.turn_context)
 
     def activate_stealing(self):
         if self.turn_context.has_stolen_card:
