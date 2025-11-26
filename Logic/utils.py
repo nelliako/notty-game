@@ -22,7 +22,7 @@ class TurnContext:
 
 # Action 1: draw up to 3 cards, constraint - cannot exceed 20 cards in hand & can be done once per turn
 
-def handle_action_draw_3(game_state: GameState, computer_player: playerDecision, TurnContext: TurnContext = None):
+def handle_action_draw_3(game_state: GameState, computer_player: playerDecision, TurnContext: TurnContext = None, ui_callback = None):
     number_of_cards = 0
     # Calculate max cards player can draw without exceeding 20
     space_in_hand = 20 - len(game_state.current_player.hand)
@@ -35,16 +35,16 @@ def handle_action_draw_3(game_state: GameState, computer_player: playerDecision,
     # Determine how many to draw
     # For Computer: deciding randomly; for Human: input
     if game_state.current_player.type == PlayerType.HUMAN:
-        try:
+        if ui_callback:
+            ui_callback(max_draw)
+        else:
             user_input = int(input(f'You can draw between 1 and {max_draw} cards: '))
             number_of_cards = max(1, min(user_input,
                                          max_draw))  # i.e. if user input is 99 and they are allowed to draw 3, this will default to 3
-        except ValueError:
-            number_of_cards = 1  # Default to 1 card on error
+            game_state.current_player.draw(game_state.deck.draw_cards(number_of_cards=number_of_cards))
     else:
         number_of_cards = computer_player.choose_number_of_card_to_draw(max_draw)
-
-    game_state.current_player.draw(game_state.deck.draw_cards(number_of_cards=number_of_cards))
+        game_state.current_player.draw(game_state.deck.draw_cards(number_of_cards=number_of_cards))
 
 
 #  Action 2: Steal a random card from an opponent; constraint - cannot exceed 20 cards in hand, can be done once per turn
