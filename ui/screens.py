@@ -152,6 +152,7 @@ class playScreen(screenBase):
         self.choose_start_player()
 
         self.permissible_moves = get_permissible_moves(self.game_state)
+        # Creating the list of moves that have been completed
         self.done_moves = []
         # Creating a list of subbuttons for draw action
         self.draw_sub_buttons = []
@@ -180,8 +181,12 @@ class playScreen(screenBase):
         handle_action_discard_group(self.game_state.current_player, self.game_state.deck, None)
 
     def activate_stealing(self):
+        # Exiting the stealing mode if it was pressed again, the implication in the draw function: getting rid of the text in draw objects if the steal mode has been activated 
+        if self.is_stealing:
+            self.is_stealing = False
+            return
         self.is_stealing = True
-
+    
     def trigger_end_turn(self):
         self.done_moves = []
         self.game_state.players.append(self.game_state.current_player)
@@ -191,9 +196,9 @@ class playScreen(screenBase):
         if self.draw_sub_buttons:
             self.draw_sub_buttons = []
             return
-        handle_action_draw_3(self.game_state, None, None, self.spawn_choice_buttons)
+        handle_action_draw_3(self.game_state, None, None, self.create_choice_buttons)
 
-    def spawn_choice_buttons(self, max_draw):
+    def create_choice_buttons(self, max_draw):
         spacing = 35
         base_x = 440
         base_y = 340 - spacing # Place above the draw button
@@ -297,10 +302,13 @@ class playScreen(screenBase):
         # self.title_options.draw(self.screen)
         # self.title_players.draw(self.screen)
         # self.title_level.draw(self.screen)
+
+        # Calculating all available moves
         self.permissible_moves = get_permissible_moves(self.game_state)
         for move in self.done_moves:
             self.permissible_moves.remove(move)
         sprites = CardSprites("cards")
+        # Establishing player hands' positions
         hand_positions = [
             PlayerHand(700, 70, -40, "horizontal"),
             PlayerHand(852, 600, -40, "horizontal"),
@@ -308,6 +316,7 @@ class playScreen(screenBase):
         ]
         i = 0
         self.available_cards = []
+        # Drawing all cards of all players
         all_players = [self.game_state.current_player] + [p for p in self.game_state.players]
         for player in all_players:
             for card in player.hand:
@@ -323,6 +332,7 @@ class playScreen(screenBase):
                 if card.color == CardColor.GREEN:
                     color = "green"
                 card_vis = CardVisual(color, card.number, sprites)
+                # If we are in a "steal" mode we need to remember cards we can steal and show them as "hovered"
                 if self.is_stealing and player.player_id != self.game_state.current_player.player_id:
                     card_vis.hovered = True
                     self.available_cards.append((card_vis, player, card))
@@ -330,10 +340,12 @@ class playScreen(screenBase):
                 hand.add_card(card_vis)
             i += 1
             hand.draw(self.screen)
+        # Prompting the user to steal if it's stealing (relevant for human player)
         if self.is_stealing:
             text = self.button_font.render("SELECT A CARD TO STEAL", True, (255, 0, 0))
             self.screen.blit(text, (600, 300))
 
+        # Drawing buttons for permissible moves
         if PlayerMove.DRAW in self.permissible_moves:
             self.draw_button.update(self.screen)
         if PlayerMove.TAKE in self.permissible_moves:
