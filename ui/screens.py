@@ -5,11 +5,11 @@ from collections import deque
 from ui.button import Button
 from ui.objects import imageObject
 from ui.text_object import textObject
-from Class.Classes import PlayerType, Player, Deck, GameState, CardColor
+from Class.Classes import PlayerType, Player, Deck, GameState, CardColor, PlayerMove
 from cards.card_sprites import CardSprites
 from visuals.card_visual import CardVisual
 from game.player_hand import PlayerHand
-from Logic.utils import TurnContext, handle_action_draw_3, handle_action_steal, handle_action_swap, handle_action_discard_group
+from Logic.utils import TurnContext, handle_action_draw_3, handle_action_steal, handle_action_swap, handle_action_discard_group, get_permissible_moves
 
 current_screen = None
 
@@ -146,13 +146,18 @@ class playScreen(screenBase):
         self.button_font = button_font
         self.smallButton_surf = pygame.transform.scale(orangeButton_surf, (30, 30))
 
-        self.turn_context = TurnContext()
+        # Preparing the "start state"
         self.create_players() 
         self.deal_hands()
         self.choose_start_player()
 
+        self.permissible_moves = get_permissible_moves(self.game_state)
+        self.done_moves = []
+        # Creating a list of subbuttons for draw action
         self.draw_sub_buttons = []
+        # Creating a list of available cards to steal "as buttons"
         self.available_cards = []
+        # Stealing mode - when it's on the player can click on the cards of others but not on their cards or other buttons
         self.is_stealing = False
 
         self.draw_button = Button(orangeButton_surf, 475, 340, "Draw", button_font, self.show_draw_options)
@@ -172,25 +177,21 @@ class playScreen(screenBase):
         self.overlay.fill((0, 0, 0, 200))
 
     def handle_discard(self):
-        handle_action_discard_group(self.game_state.current_player, self.game_state.deck, self.turn_context)
+        handle_action_discard_group(self.game_state.current_player, self.game_state.deck, None)
 
     def activate_stealing(self):
-        if self.turn_context.has_stolen_card:
-            return
         self.is_stealing = True
 
     def trigger_end_turn(self):
-        self.turn_context.reset()
+        self.done_moves = []
         self.game_state.players.append(self.game_state.current_player)
         self.game_state.current_player = self.game_state.players.popleft()
 
     def show_draw_options(self):
-        if self.turn_context.has_drawn_cards:
-            return
         if self.draw_sub_buttons:
             self.draw_sub_buttons = []
             return
-        handle_action_draw_3(self.game_state, None, self.turn_context, self.spawn_choice_buttons)
+        handle_action_draw_3(self.game_state, None, None, self.spawn_choice_buttons)
 
     def spawn_choice_buttons(self, max_draw):
         spacing = 35
@@ -206,7 +207,7 @@ class playScreen(screenBase):
         cards = self.game_state.deck.draw_cards(number_of_cards=number_of_cards)
         self.game_state.current_player.draw(cards)
         self.draw_sub_buttons = []
-        self.turn_context.has_drawn_cards = True
+        self.done_moves.append(PlayerMove.DRAW)
 
     def create_players(self):
         players = deque()
@@ -233,8 +234,8 @@ class playScreen(screenBase):
                     stolen_card = player.lose_card(player.hand.index(card))
                     self.game_state.current_player.take_card(stolen_card)
                     self.game_state.chosen_player = None
-                    self.turn_context.has_stolen_card = True
                     self.is_stealing = False
+                    self.done_moves.append(PlayerMove.TAKE)
                     return
 
         if event.type == pygame.MOUSEBUTTONDOWN:            
@@ -248,11 +249,11 @@ class playScreen(screenBase):
                     self.discard_button, self.playForMe_button, 
                     self.guide_button, self.pause_button
                 ]
-                if not self.turn_context.has_drawn_cards:
+                if PlayerMove.DRAW in self.permissible_moves:
                     active_buttons += [self.draw_button]
-                if not self.turn_context.has_stolen_card:
+                if PlayerMove.TAKE in self.permissible_moves:
                     active_buttons += [self.steal_button]
-                if not self.turn_context.has_swapped_card:
+                if PlayerMove.DRAW_ONE in self.permissible_moves:
                     active_buttons += [self.trade_button]
 
             for button in active_buttons:
@@ -274,11 +275,11 @@ class playScreen(screenBase):
             self.restart_button.changeColor(mouse_pos)
             self.backMenu_button.changeColor(mouse_pos)
         else:
-            if not self.turn_context.has_drawn_cards:
+            if PlayerMove.DRAW in self.permissible_moves:
                 self.draw_button.changeColor(mouse_pos)
-            if not self.turn_context.has_stolen_card:
+            if PlayerMove.TAKE in self.permissible_moves:
                 self.steal_button.changeColor(mouse_pos)
-            if not self.turn_context.has_swapped_card:
+            if PlayerMove.DRAW_ONE in self.permissible_moves:
                 self.trade_button.changeColor(mouse_pos)
             self.discard_button.changeColor(mouse_pos)
             self.playForMe_button.changeColor(mouse_pos)
@@ -296,6 +297,9 @@ class playScreen(screenBase):
         # self.title_options.draw(self.screen)
         # self.title_players.draw(self.screen)
         # self.title_level.draw(self.screen)
+        self.permissible_moves = get_permissible_moves(self.game_state)
+        for move in self.done_moves:
+            self.permissible_moves.remove(move)
         sprites = CardSprites("cards")
         hand_positions = [
             PlayerHand(700, 70, -40, "horizontal"),
@@ -330,15 +334,13 @@ class playScreen(screenBase):
             text = self.button_font.render("SELECT A CARD TO STEAL", True, (255, 0, 0))
             self.screen.blit(text, (600, 300))
 
-        if not self.turn_context.has_drawn_cards:
+        if PlayerMove.DRAW in self.permissible_moves:
             self.draw_button.update(self.screen)
-        if not self.turn_context.has_stolen_card:
+        if PlayerMove.TAKE in self.permissible_moves:
             self.steal_button.update(self.screen)
-        if not self.turn_context.has_swapped_card:
+        if PlayerMove.DRAW_ONE in self.permissible_moves:
             self.trade_button.update(self.screen)
-        self.draw_button.update(self.screen)
-        self.steal_button.update(self.screen)
-        self.trade_button.update(self.screen)
+
         self.discard_button.update(self.screen)
         self.playForMe_button.update(self.screen)
         self.guide_button.update(self.screen)
