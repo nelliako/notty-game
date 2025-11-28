@@ -11,6 +11,7 @@ from visuals.card_visual import CardVisual
 from game.player_hand import PlayerHand
 from Logic.utils import TurnContext, handle_action_draw_3, handle_action_steal, handle_action_swap, \
     handle_action_discard_group, get_permissible_moves, get_computer_player_decision, all_hands_non_empty
+import random
 
 current_screen = None
 
@@ -161,14 +162,16 @@ class playScreen(screenBase):
         self.done_moves = []
         # Creating a list of subbuttons for draw action
         self.draw_sub_buttons = []
-        # Creating a list of available cards to steal "as buttons"
+        # Creating a list of available cards to steal or trade "as buttons"
         self.available_cards = []
         # Stealing mode - when it's on the player can click on the cards of others but not on their cards or other buttons
         self.is_stealing = False
 
+        self.is_trading = False
+
         self.draw_button = Button(orangeButton_surf, 475, 340, "Draw", button_font, self.show_draw_options)
         self.steal_button = Button(orangeButton_surf, 585, 340, "Steal", button_font, self.activate_stealing)
-        self.trade_button = Button(orangeButton_surf, 695, 340, "Trade", button_font, None)
+        self.trade_button = Button(orangeButton_surf, 695, 340, "Trade", button_font, self.activate_trading)
         self.discard_button = Button(orangeButton_surf, 805, 340, "Discard", button_font, self.handle_discard)
         self.end_turn = Button(orangeButton_surf, 915, 340, "End Turn", button_font, self.trigger_end_turn)
 
@@ -181,11 +184,24 @@ class playScreen(screenBase):
         self.backMenu_button = Button(orangeButton_surf, center_x, center_y + 80, "Menu", button_font, None)
         self.overlay = pygame.Surface((1280, 720), pygame.SRCALPHA)
         self.overlay.fill((0, 0, 0, 200))
+    
 
     def handle_discard(self):
         handle_action_discard_group(self.game_state.current_player, self.game_state.deck, None)
 
+    def activate_trading(self):
+        if self.is_stealing:
+            self.is_trading = False
+            return
+        self.is_trading = True
+        cards_from_the_deck = self.game_state.deck.draw_cards(1)
+        self.game_state.current_player.draw(cards_from_the_deck)
+
     def activate_stealing(self):
+        if self.is_trading:
+            self.is_stealing = False
+            return
+ 
         # Exiting the stealing mode if it was pressed again, the implication in the draw function: getting rid of the text in draw objects if the steal mode has been activated 
         if self.is_stealing:
             self.is_stealing = False
@@ -222,7 +238,7 @@ class playScreen(screenBase):
     def create_players(self):
         # players = deque()
         for i in range(self.game_state.number_players):
-            self.game_state.players.append(Player(image=None, x=0, y=0, player_id=uuid.uuid4(), hand=[], player_type=PlayerType.COMPUTER_EASY, name=f"Player {i}"))
+            self.game_state.players.append(Player(image=None, x=0, y=0, player_id=uuid.uuid4(), hand=[], player_type=PlayerType.HUMAN, name=f"Player {i}"))
         # self.game_state.players = players
 
     def deal_hands(self):
@@ -262,7 +278,7 @@ class playScreen(screenBase):
             raise ValueError(f"{self.game_state.current_player.name}'s hand exceeds 20 cards!")
 
 
-        if self.game_state.current_player != PlayerType.HUMAN:
+        if self.game_state.current_player.type != PlayerType.HUMAN:
             computer_player_decision = get_computer_player_decision(game_state=self.game_state, moves=self.permissible_moves)
             move, _ = computer_player_decision.choose()
             print(f"{self.game_state.current_player.name} chose move: {move}")
@@ -307,12 +323,27 @@ class playScreen(screenBase):
             mouse_x, mouse_y = event.pos
             for card_vis, player, card in self.available_cards:
                 if card_vis.contains_point(mouse_x, mouse_y):
-                    stolen_card = player.lose_card(player.hand.index(card))
+                    stolen_card = player.lose_card(random.randint(0, (len(player.hand)-1)))
                     self.game_state.current_player.take_card(stolen_card)
                     self.game_state.chosen_player = None
                     self.is_stealing = False
                     self.done_moves.append(PlayerMove.TAKE)
                     return
+                
+        # Trading
+        if event.type == pygame.MOUSEBUTTONDOWN and self.is_trading:
+            mouse_x, mouse_y = event.pos
+            for card_vis, player, card in reversed(self.available_cards): # needs to be changed 
+                if card_vis.contains_point(mouse_x, mouse_y):
+                    # discard any card from the deck
+                    discarded_card = [player.lose_card(player.hand.index(card))]
+                    # add the discarded card back to the deck
+                    self.game_state.deck.add_cards(discarded_card)
+                    self.is_trading = False
+                    self.done_moves.append(PlayerMove.DRAW_ONE)
+                    return
+                
+        
 
         if event.type == pygame.MOUSEBUTTONDOWN:            
             active_buttons = []
@@ -411,12 +442,22 @@ class playScreen(screenBase):
                     if self.is_stealing and player.player_id != self.game_state.current_player.player_id:
                         card_vis.hovered = True
                         self.available_cards.append((card_vis, player, card))
+
+                    # If we are in the trading mode
+                    if self.is_trading and player.player_id == self.game_state.current_player.player_id:
+                        card_vis.hovered = True
+                        self.available_cards.append((card_vis, player, card))
                     hand = hand_positions[i]
                     hand.add_card(card_vis)
                 hand.draw(self.screen)
         # Prompting the user to steal if it's stealing (relevant for human player)
         if self.is_stealing:
-            text = self.button_font.render("SELECT A CARD TO STEAL", True, (255, 0, 0))
+            text = self.button_font.render("SELECT A PLAYER TO STEAL A RANDOM CARD", True, (255, 0, 0))
+            self.screen.blit(text, (600, 300))
+
+        if self.is_trading:
+            # There should be a card appearing on the screen drawn from the deck 
+            text = self.button_font.render("DISCARD ANY CARD FROM YOUR HAND", True, (255, 0, 0))
             self.screen.blit(text, (600, 300))
 
         # Drawing buttons for permissible moves
@@ -424,7 +465,8 @@ class playScreen(screenBase):
             self.draw_button.update(self.screen)
         if PlayerMove.TAKE in self.permissible_moves:
             self.steal_button.update(self.screen)
-        if PlayerMove.DRAW_ONE in self.permissible_moves:
+        # This is because we need to get rid of the button straight after we entered the mode to avoid cheating
+        if PlayerMove.DRAW_ONE in self.permissible_moves and not self.is_trading:
             self.trade_button.update(self.screen)
 
         self.discard_button.update(self.screen)
