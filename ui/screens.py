@@ -2,6 +2,8 @@ import pygame
 import sys
 import uuid
 from collections import deque
+
+from computerLogic.playerDecision import EASY
 from ui.button import Button
 from ui.objects import imageObject
 from ui.text_object import textObject
@@ -175,16 +177,36 @@ class playScreen(screenBase):
         self.discard_button = Button(orangeButton_surf, 805, 340, "Discard", button_font, self.handle_discard)
         self.end_turn = Button(orangeButton_surf, 915, 340, "End Turn", button_font, self.trigger_end_turn)
 
-        self.playForMe_button = Button(orangeButton_surf, 980, 40, "Play for me", button_font, None)
+        self.playForMe_button = Button(orangeButton_surf, 980, 40, "Play for me", button_font, self.play_for_me_button)
         self.guide_button = Button(orangeButton_surf, 1090, 40, "Guide", button_font, None)
-        self.pause_button = Button(orangeButton_surf, 1200, 40, "Pause", button_font, None)
+        self.pause_button = Button(orangeButton_surf, 1200, 40, "Pause", button_font, self.pause_game)
 
-        self.resume_button = Button(orangeButton_surf, center_x, center_y - 80, "Resume", button_font, None)
-        self.restart_button = Button(orangeButton_surf, center_x, center_y, "Restart", button_font, None)
-        self.backMenu_button = Button(orangeButton_surf, center_x, center_y + 80, "Menu", button_font, None)
+        self.resume_button = Button(orangeButton_surf, center_x, center_y - 80, "Resume", button_font, self.resume_game)
+        self.restart_button = Button(orangeButton_surf, center_x, center_y, "Restart", button_font, self.restart_game)
+        self.backMenu_button = Button(orangeButton_surf, center_x, center_y + 80, "Menu", button_font, self.navigate_to_menu_screen)
         self.overlay = pygame.Surface((1280, 720), pygame.SRCALPHA)
         self.overlay.fill((0, 0, 0, 200))
-    
+
+    def pause_game(self):
+        self.is_paused = True
+
+    def resume_game(self):
+        self.is_paused = False
+
+    def restart_game(self):
+        self.game_state.reset_state()
+        self.create_players()
+        self.deal_hands()
+        self.choose_start_player()
+        self.is_paused = False
+
+    def navigate_to_menu_screen(self):
+        self.game_state.reset_state()
+        return menuScreen(self.screen, self.game_state), None
+
+    def play_for_me_button(self):
+        self.game_state.computer_playing_for_human = True
+        return None, EASY(self.game_state, self.permissible_moves)
 
     def handle_discard(self):
         handle_action_discard_group(self.game_state.current_player, self.game_state.deck, None)
@@ -238,7 +260,10 @@ class playScreen(screenBase):
     def create_players(self):
         # players = deque()
         for i in range(self.game_state.number_players):
-            self.game_state.players.append(Player(image=None, x=0, y=0, player_id=uuid.uuid4(), hand=[], player_type=PlayerType.HUMAN, name=f"Player {i}"))
+            if i == 0:
+                self.game_state.players.append(Player(image=None, x=0, y=0, player_id=uuid.uuid4(), hand=[], player_type=PlayerType.HUMAN, name=f"Player {i}"))
+            else:
+                self.game_state.players.append(Player(image=None, x=0, y=0, player_id=uuid.uuid4(), hand=[], player_type=self.game_state.computer_difficulty, name=f"Player {i}"))
         # self.game_state.players = players
 
     def deal_hands(self):
@@ -251,14 +276,14 @@ class playScreen(screenBase):
     def process_event(self, event):
         global current_screen
 
-        print(f"Game State Deck size: {len(self.game_state.deck.cards)}")
+        # print(f"Game State Deck size: {len(self.game_state.deck.cards)}")
 
         total_cards = list(self.game_state.deck.cards)
         for player in [self.game_state.current_player] + list(self.game_state.players):
-            print(f"{player.name}'s hand size: {len(player.hand)}!")
+            # print(f"{player.name}'s hand size: {len(player.hand)}!")
             total_cards += list(player.hand)
 
-        print(f"Total Cards: {len(total_cards)}")
+        # print(f"Total Cards: {len(total_cards)}")
 
         if len(total_cards) > 90:
             seen_ids = set()
@@ -297,7 +322,7 @@ class playScreen(screenBase):
                     break
 
                 if move == PlayerMove.DISCARD_VALID_CARDS:
-                    handle_action_discard_group(self.game_state.current_player, self.game_state.deck)
+                    handle_action_discard_group(self.game_state)
                     break
 
                 if move == PlayerMove.END_TURN or move == PlayerMove.PASS:
@@ -305,6 +330,7 @@ class playScreen(screenBase):
                     break
 
         if not all_hands_non_empty(self.game_state):
+            # TODO replace with a function & return winning player
             for player in self.game_state.players:
                 if len(player.hand) == 0:
                     print(f'The winner is {player.name}')
@@ -312,6 +338,7 @@ class playScreen(screenBase):
                     break
 
             self.game_state.reset_state()
+            # TODO replace with Game Over Screen
             current_screen = menuScreen(self.screen, self.game_state)
             print(f"current screen:  {current_screen}")
             self.close = True
@@ -352,9 +379,7 @@ class playScreen(screenBase):
                 active_buttons = [self.resume_button, self.restart_button, self.backMenu_button]
             else:
                 active_buttons = self.draw_sub_buttons + [
-                    self.end_turn, 
-                    self.discard_button, self.playForMe_button, 
-                    self.guide_button, self.pause_button
+                    self.end_turn, self.discard_button, self.playForMe_button, self.guide_button, self.pause_button
                 ]
                 if PlayerMove.DRAW in self.permissible_moves:
                     active_buttons += [self.draw_button]
@@ -365,24 +390,55 @@ class playScreen(screenBase):
 
             for button in active_buttons:
                 if button.rect.collidepoint(event.pos):
-                    screen = button.handle_event(event) 
-                    
-                    if screen is not None:
-                        current_screen = screen
-                        self.close = True
-                        return
+                    try:
+                        screen, computer_player_decision = button.handle_event(event)
+                        if screen is not None:
+                            current_screen = screen
+                            self.close = True
+                            return
+                        if computer_player_decision is not None and self.game_state.computer_playing_for_human:
+                            move, _ = computer_player_decision.choose()
+                            print(f"On behalf of {self.game_state.current_player.name}, the computer chose move: {move}")
 
+                            while True:
+                                if move == PlayerMove.DRAW:
+                                    handle_action_draw_3(self.game_state, computer_player_decision)
+                                    self.game_state.computer_playing_for_human = False
+                                    break
+
+                                if move == PlayerMove.TAKE:
+                                    handle_action_steal(self.game_state, computer_player_decision)
+                                    self.game_state.computer_playing_for_human = False
+                                    break
+
+                                if move == PlayerMove.DRAW_ONE:
+                                    handle_action_swap(self.game_state, computer_player_decision)
+                                    self.game_state.computer_playing_for_human = False
+                                    break
+
+                                if move == PlayerMove.DISCARD_VALID_CARDS:
+                                    handle_action_discard_group(self.game_state)
+                                    self.game_state.computer_playing_for_human = False
+                                    break
+
+                                if move == PlayerMove.END_TURN or move == PlayerMove.PASS:
+                                    self.game_state.computer_playing_for_human = False
+                                    self.trigger_end_turn()
+                                    break
+                            return
+                    except Exception as e:
+                        return
                     return
 
         if not all_hands_non_empty(self.game_state):
-            if not all_hands_non_empty(self.game_state):
-                for player in self.game_state.players:
-                    if len(player.hand) == 0:
-                        print(f'The winner is {player.name}')
-                        # is_endgame = True
-                        break
+            for player in self.game_state.players:
+                if len(player.hand) == 0:
+                    print(f'The winner is {player.name}')
+                    # is_endgame = True
+                    break
 
             self.game_state.reset_state()
+            # TODO replace with Game Over Screen
             current_screen = menuScreen(self.screen, self.game_state)
             print(f"current screen:  {current_screen}")
             self.close = True
@@ -519,7 +575,6 @@ class OptionSelectScreen(screenBase):
 
     def navigate_to_menu_screen(self):
         return menuScreen(self.screen, self.game_state)
-
 
     def set_difficult_easy(self):
         self.game_state.set_player_difficulty(PlayerType.COMPUTER_EASY)

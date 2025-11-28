@@ -35,7 +35,7 @@ def handle_action_draw_3(game_state: GameState, computer_player: playerDecision,
 
     # Determine how many to draw
     # For Computer: deciding randomly; for Human: input
-    if game_state.current_player.type == PlayerType.HUMAN:
+    if game_state.current_player.type == PlayerType.HUMAN and not game_state.computer_playing_for_human:
         if ui_callback:
             ui_callback(max_draw)
         else:
@@ -66,7 +66,7 @@ def handle_action_steal(game_state: GameState, computer_player_decision: playerD
     # Select target
     # TODO: prompt current player to choose the user BUT leave this line for a computer_player_decision player type
 
-    if game_state.current_player.type == PlayerType.HUMAN:
+    if game_state.current_player.type == PlayerType.HUMAN and not game_state.computer_playing_for_human:
         while chosen_card is None:
             while game_state.chosen_player is None:
                 for index, player in enumerate(game_state.players):
@@ -129,7 +129,7 @@ def handle_action_swap(game_state: GameState, computer_player_decision: playerDe
 
     # Choose the card to discard when player is human
 
-    if game_state.current_player.type == PlayerType.HUMAN:
+    if game_state.current_player.type == PlayerType.HUMAN and not game_state.computer_playing_for_human:
         print('Which card do you want to discard?')
 
         # Numerating the cards so that the user could choose which one to discard
@@ -168,17 +168,17 @@ def handle_action_swap(game_state: GameState, computer_player_decision: playerDe
 
 
 # Actions 4: discard group - no constraints
-def handle_action_discard_group(player: Player, deck: Deck, context: TurnContext = None):
+def handle_action_discard_group(game_state: GameState, context: TurnContext = None):
     valid_group = []
-    if player.type != PlayerType.HUMAN:
-        valid_group = contains_valid_group(player.hand)
+    if game_state.current_player.type != PlayerType.HUMAN and not game_state.computer_playing_for_human:
+        valid_group = contains_valid_group(game_state.current_player.hand)
         if valid_group is not None:
             # player.discard_valid_cards(list())
             # Adding the removed card back to the deck
-            player.discard_valid_cards(valid_group)
-            deck.add_cards(valid_group)
+            game_state.current_player.discard_valid_cards(valid_group)
+            game_state.deck.add_cards(valid_group)
             # Shuffling the deck
-            deck.shuffle_deck()
+            game_state.deck.shuffle_deck()
             return True
         return False
     else:
@@ -189,11 +189,11 @@ def handle_action_discard_group(player: Player, deck: Deck, context: TurnContext
         # selected_cards = [card for card in game_state.current_player.hand if card.is_selected]
         # if contains_valid_group(selected_cards) is None:
         #     print("Selected cards must be a valid group.")
-        valid_group = contains_valid_group(player.hand)
+        valid_group = contains_valid_group(game_state.current_player.hand)
         if valid_group is not None:
-            player.discard_valid_cards(valid_group)
-            deck.add_cards(valid_group)
-            deck.shuffle_deck()
+            game_state.current_player.discard_valid_cards(valid_group)
+            game_state.deck.add_cards(valid_group)
+            game_state.deck.shuffle_deck()
             return True
         return False
 
