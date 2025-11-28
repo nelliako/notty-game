@@ -115,32 +115,36 @@ def handle_action_steal(game_state: GameState, computer_player_decision: playerD
 
 # Action 3: draw 1 card, discard 1 card; constraints
 def handle_action_swap(game_state: GameState, computer_player_decision: playerDecision = None,
-                       context: TurnContext = None):
+                       context: TurnContext = None, ui_callback = None, skip_drawing: bool = False):
     # Has this action been done before?
     if context is not None and context.has_swapped_card:
         return
 
-    # Drawing card from the deck and accessing it from the list
-    card_drawn = game_state.deck.draw_cards(1)[0]
-    print(f'You drew {card_drawn}')
+    if not skip_drawing:
+        # Drawing card from the deck and accessing it from the list
+        card_drawn = game_state.deck.draw_cards(1)[0]
+        print(f'You drew {card_drawn}')
 
-    # add drawn card to player hand
-    game_state.current_player.take_card(card_drawn)
+        # add drawn card to player hand
+        game_state.current_player.take_card(card_drawn)
 
     # Choose the card to discard when player is human
 
     if game_state.current_player.type == PlayerType.HUMAN and not game_state.computer_playing_for_human:
-        print('Which card do you want to discard?')
+        if ui_callback:
+            card_to_be_discarded = ui_callback()
+        else:
+            print('Which card do you want to discard?')
 
-        # Numerating the cards so that the user could choose which one to discard
-        for card in range(len(game_state.current_player.hand)):
-            print(card)
-            print(game_state.current_player.hand[card])
-        print(len(game_state.current_player.hand))
-        print(card_drawn)
+            # Numerating the cards so that the user could choose which one to discard
+            for card in range(len(game_state.current_player.hand)):
+                print(card)
+                print(game_state.current_player.hand[card])
+            print(len(game_state.current_player.hand))
+            print(card_drawn)
 
-        # choose which card to discard
-        card_to_be_discarded = int(input('Provide the card number'))
+            # choose which card to discard
+            card_to_be_discarded = int(input('Provide the card number'))
 
         # Discard the chosen card
         discarded_card = game_state.current_player.lose_card(card_to_be_discarded)
@@ -148,7 +152,8 @@ def handle_action_swap(game_state: GameState, computer_player_decision: playerDe
         game_state.deck.add_cards([discarded_card])
         # Shuffling the deck
         game_state.deck.shuffle_deck()
-        context.has_swapped_card = True
+        if context is not None:
+            context.has_swapped_card = True
         return
 
     # Choose the card to discard when player is computer
