@@ -186,7 +186,7 @@ class playScreen(screenBase):
         self.permissible_moves = get_permissible_moves(self.game_state)
         self.done_moves = []
         self.draw_sub_buttons = []
-        self.available_cards = []
+        self.available_cards_for_steal_or_trade = []
         self.is_stealing = False
         self.is_trading = False
 
@@ -207,7 +207,7 @@ class playScreen(screenBase):
         return None, EASY(self.game_state, self.permissible_moves)
 
     def handle_discard(self):
-        handle_action_discard_group(self.game_state.current_player, self.game_state.deck, None)
+        handle_action_discard_group(self.game_state, None)
 
     def activate_trading(self):
         if self.is_stealing:
@@ -346,7 +346,7 @@ class playScreen(screenBase):
         # TODO(Nellia): use logic from utils.py, it's not a good place to have this logic here.
         if event.type == pygame.MOUSEBUTTONDOWN and self.is_stealing:
             mouse_x, mouse_y = event.pos
-            for card_vis, player, card in self.available_cards:
+            for card_vis, player, card in self.available_cards_for_steal_or_trade:
                 if card_vis.contains_point(mouse_x, mouse_y):
                     stolen_card = player.lose_card(random.randint(0, (len(player.hand)-1)))
                     self.game_state.current_player.take_card(stolen_card)
@@ -358,7 +358,7 @@ class playScreen(screenBase):
         # Trading
         if event.type == pygame.MOUSEBUTTONDOWN and self.is_trading:
             mouse_x, mouse_y = event.pos
-            for card_vis, player, card in reversed(self.available_cards): # needs to be changed 
+            for card_vis, player, card in reversed(self.available_cards_for_steal_or_trade): # needs to be changed
                 if card_vis.contains_point(mouse_x, mouse_y):
                     handle_action_swap(self.game_state, None, None, lambda: player.hand.index(card), skip_drawing=True)
                     self.is_trading = False
@@ -480,7 +480,7 @@ class playScreen(screenBase):
             PlayerHand(852, 600, -40, "horizontal"),
             PlayerHand(426, 600, -40, "horizontal"),
         ]
-        self.available_cards = []
+        self.available_cards_for_steal_or_trade = []
         # Drawing all cards of all players
         all_players = [self.game_state.current_player] + list(self.game_state.players)
         for i, player in enumerate(all_players):
@@ -491,12 +491,12 @@ class playScreen(screenBase):
                     # If we are in a "steal" mode we need to remember cards we can steal and show them as "hovered"
                     if self.is_stealing and player.player_id != self.game_state.current_player.player_id:
                         card_vis.hovered = True
-                        self.available_cards.append((card_vis, player, card))
+                        self.available_cards_for_steal_or_trade.append((card_vis, player, card))
 
                     # If we are in the trading mode
                     if self.is_trading and player.player_id == self.game_state.current_player.player_id:
                         card_vis.hovered = True
-                        self.available_cards.append((card_vis, player, card))
+                        self.available_cards_for_steal_or_trade.append((card_vis, player, card))
                     hand = hand_positions[i]
                     hand.add_card(card_vis)
                 hand.draw(self.screen)
