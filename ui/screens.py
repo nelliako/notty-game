@@ -158,18 +158,7 @@ class playScreen(screenBase):
         self.create_players() 
         self.deal_hands()
         self.choose_start_player()
-
-        self.permissible_moves = get_permissible_moves(self.game_state)
-        # Creating the list of moves that have been completed
-        self.done_moves = []
-        # Creating a list of subbuttons for draw action
-        self.draw_sub_buttons = []
-        # Creating a list of available cards to steal or trade "as buttons"
-        self.available_cards = []
-        # Stealing mode - when it's on the player can click on the cards of others but not on their cards or other buttons
-        self.is_stealing = False
-
-        self.is_trading = False
+        self.reset_state()
 
         self.draw_button = Button(orangeButton_surf, 475, 340, "Draw", button_font, self.show_draw_options)
         self.steal_button = Button(orangeButton_surf, 585, 340, "Steal", button_font, self.activate_stealing)
@@ -193,12 +182,21 @@ class playScreen(screenBase):
     def resume_game(self):
         self.is_paused = False
 
+    def reset_state(self):
+        self.permissible_moves = get_permissible_moves(self.game_state)
+        self.done_moves = []
+        self.draw_sub_buttons = []
+        self.available_cards = []
+        self.is_stealing = False
+        self.is_trading = False
+
     def restart_game(self):
         self.game_state.reset_state()
         self.create_players()
         self.deal_hands()
         self.choose_start_player()
         self.is_paused = False
+        self.reset_state()
 
     def navigate_to_menu_screen(self):
         self.game_state.reset_state()
@@ -362,14 +360,10 @@ class playScreen(screenBase):
             mouse_x, mouse_y = event.pos
             for card_vis, player, card in reversed(self.available_cards): # needs to be changed 
                 if card_vis.contains_point(mouse_x, mouse_y):
-                    # discard any card from the deck
-                    discarded_card = [player.lose_card(player.hand.index(card))]
-                    # add the discarded card back to the deck
-                    self.game_state.deck.add_cards(discarded_card)
+                    handle_action_swap(self.game_state, None, None, lambda: player.hand.index(card), skip_drawing=True)
                     self.is_trading = False
                     self.done_moves.append(PlayerMove.DRAW_ONE)
                     return
-                
         
 
         if event.type == pygame.MOUSEBUTTONDOWN:            
