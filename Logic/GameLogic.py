@@ -78,6 +78,35 @@ def game_loop():
             print(f"{game_state.current_player.name} chose move: {move}")
 
         while True:
+            print(f"Game State Deck size: {len(game_state.deck.cards)}")
+
+            total_cards = list(game_state.deck.cards)
+            for player in [game_state.current_player] + list(game_state.players):
+                print(f"{player.name}'s hand size: {len(player.hand)}!")
+                total_cards += list(player.hand)
+
+            print(f"Total Cards: {len(total_cards)}")
+
+            if len(total_cards) > 90:
+                seen_ids = set()
+                unique_cards = []
+
+                for card in total_cards:
+                    if card.id not in seen_ids:
+                        unique_cards.append(card)
+                        seen_ids.add(card.id)
+
+                print(unique_cards)
+                print(seen_ids)
+                raise ValueError("Cards in deck exceeds 90 cards!")
+
+            print(
+                f"Game state Current Player {game_state.current_player.name} Hand Size: {len(game_state.current_player.hand)}")
+            if len(game_state.current_player.hand) > 20:
+                raise ValueError(f"{game_state.current_player.name}'s hand exceeds 20 cards!")
+
+
+
             if move == PlayerMove.DRAW:
                 handle_action_draw_3(game_state, computer_player_decision)
 
@@ -121,7 +150,7 @@ def game_loop():
     if not all_hands_non_empty(game_state):
         for player in game_state.players:
             if len(player.hand) == 0:
-                print(f'The winner is {player}')
+                print(f'The winner is {player.name}')
                 # is_endgame = True
                 break
 

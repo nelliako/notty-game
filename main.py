@@ -4,7 +4,7 @@ from ui.see_screens import see_screens
 from see_cards import see_cards
 
 if __name__ == '__main__':
-    #see_cards()
+    # see_cards()
     see_screens()
     # run_game()
     # game_loop()

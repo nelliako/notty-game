@@ -21,17 +21,22 @@ class DrawOptions(Enum):
 
 
 class CardColor(Enum):
-    RED = Color(220, 20, 60, 255)
-    GREEN = Color(0, 168, 107, 255)
-    BLUE = Color(0, 71, 171, 255)
-    BLACK = Color(0, 0, 0, 255)
-    YELLOW = Color(250, 218, 94, 255)
+    RED = ('red', Color(220, 20, 60, 255))
+    GREEN = ('green', Color(0, 168, 107, 255))
+    BLUE = ('blue', Color(0, 71, 171, 255))
+    BLACK = ('black', Color(0, 0, 0, 255))
+    YELLOW = ('yellow', Color(250, 218, 94, 255))
+
+    def __init__(self, display_name, color):
+        self.display_name = display_name
+        self.color = color
 
 
 @dataclass
 class Card:
     def __init__(self, card_color, number):
         super().__init__()
+        self.id = uuid.uuid4()
         # self.image = image
         # self.original_image = image
         self.hover_image = None
@@ -47,7 +52,7 @@ class Card:
     # TODO(Darron from Nellia): make this type hashable for colours_identical. 
 
     def __repr__(self):
-        return f"Card({self.color}, {self.number})"
+        return f"Card({self.color}, {self.number}, {self.id})"
 
     def __eq__(self, other):
         if not isinstance(other, Card):
@@ -82,6 +87,7 @@ def create_deck():
 
     all_cards = red_cards + green_cards + blue_cards + black_cards + yellow_cards
     all_cards = all_cards + all_cards
+    print(f"Initial Deck Size: {len(all_cards)}")
     random.shuffle(all_cards)
     return Deque(all_cards)
 
@@ -210,4 +216,9 @@ class GameState:
         self.player_difficulty = difficulty
         print(f"Player_difficulty selected: {self.player_difficulty}!")
 
+    def reset_state(self):
+        self.current_player = None
+        self.chosen_player = None
+        self.players = deque()
+        self.deck = Deck()
 

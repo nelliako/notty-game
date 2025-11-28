@@ -9,7 +9,8 @@ from Class.Classes import PlayerType, Player, Deck, GameState, CardColor, Player
 from cards.card_sprites import CardSprites
 from visuals.card_visual import CardVisual
 from game.player_hand import PlayerHand
-from Logic.utils import TurnContext, handle_action_draw_3, handle_action_steal, handle_action_swap, handle_action_discard_group, get_permissible_moves
+from Logic.utils import TurnContext, handle_action_draw_3, handle_action_steal, handle_action_swap, \
+    handle_action_discard_group, get_permissible_moves, get_computer_player_decision, all_hands_non_empty
 
 current_screen = None
 
@@ -112,7 +113,11 @@ class menuScreen(screenBase):
         return OptionSelectScreen(self.screen, self.game_state)
 
     def navigate_to_exit_screen(self):
-        return None
+        self.close = True
+        print("QUIT EVENT")
+
+        pygame.quit()
+        sys.exit()
 
     def update_objects(self):
         mouse_pos = pygame.mouse.get_pos()
@@ -215,10 +220,10 @@ class playScreen(screenBase):
         self.done_moves.append(PlayerMove.DRAW)
 
     def create_players(self):
-        players = deque()
+        # players = deque()
         for i in range(self.game_state.number_players):
-            players.append(Player(image=None, x=0, y=0, player_id=uuid.uuid4(), hand=[], player_type=PlayerType.HUMAN, name=f"Player {i}"))
-        self.game_state.players = players
+            self.game_state.players.append(Player(image=None, x=0, y=0, player_id=uuid.uuid4(), hand=[], player_type=PlayerType.COMPUTER_EASY, name=f"Player {i}"))
+        # self.game_state.players = players
 
     def deal_hands(self):
         for player in self.game_state.players:
@@ -229,6 +234,72 @@ class playScreen(screenBase):
 
     def process_event(self, event):
         global current_screen
+
+        print(f"Game State Deck size: {len(self.game_state.deck.cards)}")
+
+        total_cards = list(self.game_state.deck.cards)
+        for player in [self.game_state.current_player] + list(self.game_state.players):
+            print(f"{player.name}'s hand size: {len(player.hand)}!")
+            total_cards += list(player.hand)
+
+        print(f"Total Cards: {len(total_cards)}")
+
+        if len(total_cards) > 90:
+            seen_ids = set()
+            unique_cards = []
+
+            for card in total_cards:
+                if card.id not in seen_ids:
+                    unique_cards.append(card)
+                    seen_ids.add(card.id)
+
+            print(unique_cards)
+            print(seen_ids)
+            raise ValueError("Cards in deck exceeds 90 cards!")
+
+        print(f"Game state Current Player {self.game_state.current_player.name} Hand Size: {len(self.game_state.current_player.hand)}")
+        if len(self.game_state.current_player.hand) > 20:
+            raise ValueError(f"{self.game_state.current_player.name}'s hand exceeds 20 cards!")
+
+
+        if self.game_state.current_player != PlayerType.HUMAN:
+            computer_player_decision = get_computer_player_decision(game_state=self.game_state, moves=self.permissible_moves)
+            move, _ = computer_player_decision.choose()
+            print(f"{self.game_state.current_player.name} chose move: {move}")
+
+            while True:
+                if move == PlayerMove.DRAW:
+                    handle_action_draw_3(self.game_state, computer_player_decision)
+                    break
+
+                if move == PlayerMove.TAKE:
+                    handle_action_steal(self.game_state, computer_player_decision)
+                    break
+
+                if move == PlayerMove.DRAW_ONE:
+                    handle_action_swap(self.game_state, computer_player_decision)
+                    break
+
+                if move == PlayerMove.DISCARD_VALID_CARDS:
+                    handle_action_discard_group(self.game_state.current_player, self.game_state.deck)
+                    break
+
+                if move == PlayerMove.END_TURN or move == PlayerMove.PASS:
+                    self.trigger_end_turn()
+                    break
+
+        if not all_hands_non_empty(self.game_state):
+            for player in self.game_state.players:
+                if len(player.hand) == 0:
+                    print(f'The winner is {player.name}')
+                    # is_endgame = True
+                    break
+
+            self.game_state.reset_state()
+            current_screen = menuScreen(self.screen, self.game_state)
+            print(f"current screen:  {current_screen}")
+            self.close = True
+            return
 
         # Stealing
         # TODO(Nellia): use logic from utils.py, it's not a good place to have this logic here.
@@ -272,6 +343,20 @@ class playScreen(screenBase):
 
                     return
 
+        if not all_hands_non_empty(self.game_state):
+            if not all_hands_non_empty(self.game_state):
+                for player in self.game_state.players:
+                    if len(player.hand) == 0:
+                        print(f'The winner is {player.name}')
+                        # is_endgame = True
+                        break
+
+            self.game_state.reset_state()
+            current_screen = menuScreen(self.screen, self.game_state)
+            print(f"current screen:  {current_screen}")
+            self.close = True
+            return
+
     def update_objects(self):
         mouse_pos = pygame.mouse.get_pos()
         if self.is_paused:
@@ -314,32 +399,21 @@ class playScreen(screenBase):
             PlayerHand(852, 600, -40, "horizontal"),
             PlayerHand(426, 600, -40, "horizontal"),
         ]
-        i = 0
         self.available_cards = []
         # Drawing all cards of all players
-        all_players = [self.game_state.current_player] + [p for p in self.game_state.players]
-        for player in all_players:
-            for card in player.hand:
-                color = ""
-                if card.color == CardColor.RED:
-                    color = "red"
-                if card.color == CardColor.BLACK:
-                    color = "black"
-                if card.color == CardColor.BLUE:
-                    color = "blue"
-                if card.color == CardColor.YELLOW:
-                    color = "yellow"
-                if card.color == CardColor.GREEN:
-                    color = "green"
-                card_vis = CardVisual(color, card.number, sprites)
-                # If we are in a "steal" mode we need to remember cards we can steal and show them as "hovered"
-                if self.is_stealing and player.player_id != self.game_state.current_player.player_id:
-                    card_vis.hovered = True
-                    self.available_cards.append((card_vis, player, card))
-                hand = hand_positions[i]
-                hand.add_card(card_vis)
-            i += 1
-            hand.draw(self.screen)
+        all_players = [self.game_state.current_player] + list(self.game_state.players)
+        for i, player in enumerate(all_players):
+            if len(player.hand) > 0:
+                hand = []
+                for card in player.hand:
+                    card_vis = CardVisual(card.color.display_name, card.number, sprites)
+                    # If we are in a "steal" mode we need to remember cards we can steal and show them as "hovered"
+                    if self.is_stealing and player.player_id != self.game_state.current_player.player_id:
+                        card_vis.hovered = True
+                        self.available_cards.append((card_vis, player, card))
+                    hand = hand_positions[i]
+                    hand.add_card(card_vis)
+                hand.draw(self.screen)
         # Prompting the user to steal if it's stealing (relevant for human player)
         if self.is_stealing:
             text = self.button_font.render("SELECT A CARD TO STEAL", True, (255, 0, 0))
@@ -377,10 +451,11 @@ class OptionSelectScreen(screenBase):
 
         self.select_frame = imageObject("ui/images/selectFrame.png", 640, 365, 'center')
 
-        self.title_options = textObject(520, 135, "Options", "ui/Font/Minecraftia-Regular.ttf", 35, 'Black', 'center')
-        self.title_level = textObject(480, 200, "Choose level", "ui/Font/Minecraftia-Regular.ttf", 35, 'Black',
+        font_path = "ui/Font/Minecraftia-Regular.ttf"
+        self.title_options = textObject(520, 135, "Options", font_path, 35, 'Black', 'center')
+        self.title_level = textObject(480, 200, "Choose level", font_path, 35, 'Black',
                                       'topleft')
-        self.title_players = textObject(480, 390, "Players", "ui/Font/Minecraftia-Regular.ttf", 35, 'Black', 'topleft')
+        self.title_players = textObject(480, 390, "Players", font_path, 35, 'Black', 'topleft')
 
         greenButton_surf = pygame.image.load("ui/buttonImages/greenButton.png").convert_alpha()
         blueButton_surf = pygame.image.load("ui/buttonImages/blueButton.png").convert_alpha()
@@ -389,7 +464,7 @@ class OptionSelectScreen(screenBase):
         orangeButton_surf = pygame.image.load("ui/buttonImages/orangeButton.png").convert_alpha()
         orangeButton_surf = pygame.transform.scale(orangeButton_surf, (100, 30))
 
-        button_font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 13)
+        button_font = pygame.font.Font(font_path, 13)
         self.confirm_button = Button(orangeButton_surf, 660, 140, "Confirm", button_font, on_click=self.navigate_to_menu_screen)
         self.back_button = Button(orangeButton_surf, 770, 140, "Back", button_font, on_click=self.navigate_to_menu_screen)
         self.easy_button = Button(greenButton_surf, 520, 310, "Easy", button_font, on_click=self.set_difficult_easy)
