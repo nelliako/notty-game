@@ -1,5 +1,5 @@
 class PlayerHand:
-    def __init__(self, center_x, center_y, spacing,orientation):
+    def __init__(self, center_x, center_y, spacing, orientation):
         self.center_x = center_x
         self.center_y = center_y
         self.spacing = spacing
@@ -31,7 +31,7 @@ class PlayerHand:
                 card.x = start_x + (i * spacing)
                 card.base_y = y
 
-        else: 
+        else:
             start_y = self.center_y - total_width // 2
             x = self.center_x
 

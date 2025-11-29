@@ -1,6 +1,8 @@
 import pygame
+
+
 class CardSprites:
-    #loadpngs and store them in a dictionary
+    # loadpngs and store them in a dictionary
 
     def __init__(self, folder_path="cards"):
         self.cards = {}
@@ -20,6 +22,4 @@ class CardSprites:
         self.overlay = pygame.image.load(overlay_path).convert_alpha()
 
     def get(self, colour, number):
-        return self.cards[(colour, number)]           
-    
-       
+        return self.cards[(colour, number)]

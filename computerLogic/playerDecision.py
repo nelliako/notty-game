@@ -4,16 +4,9 @@
 # OUTPUTS: chosenMove --> A tuple with object playerMove and a parameter of typer integer : (playerMove, parameter)
 #                                                           
 #                        
-import pygame
 import random
 
-from Class.Classes import Deck, GameState, State, DrawOptions, Player, PlayerMove, PlayerType
-
-class chosenMove:
-    def __init__(self,currPlayer,outMove,intParam):
-        self.currPlayer = currPlayer
-        self.move = outMove
-        self.intParam = intParam
+from Class.Classes import GameState, Player, PlayerMove
 
 # Base Class for computer_player_decision Players 'EASY', 'MEDIUM' & 'HARD'
 class playerDecision:

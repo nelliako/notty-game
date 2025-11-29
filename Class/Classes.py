@@ -205,7 +205,7 @@ class GameState:
         self.chosen_player: Player = None
         self.deck = deck
         self.state = State.CONTINUE
-        self.number_players = 2
+        self.number_players = 3
         self.computer_difficulty = PlayerType.COMPUTER_EASY
         self.computer_playing_for_human = False
 
