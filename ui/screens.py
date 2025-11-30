@@ -255,22 +255,78 @@ class playScreen(screenBase):
 
     def draw_guide(self):
         self.screen.blit(self.overlay, (0, 0))
-        panel_x, panel_y = 200, 80
-        paper = pygame.image.load("ui/images/guidePaper.png").convert_alpha()
-        self.screen.blit(paper, (panel_x, panel_y))
+        screen_center_x = 640
+        screen_center_y = 360
+        target_width = 600
+        target_height = 600
+        panel_x = screen_center_x - (target_width // 2)
+        panel_y = screen_center_y - (target_height // 2)
+
+        paper_object = imageObject("ui/images/guidePaper.png", screen_center_x, screen_center_y, 'center')
+        paper_object.scale(target_width, target_height)
+        paper_object.rect.topleft = (panel_x, panel_y)
+        paper_object.draw(self.screen)
+
         font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 20)
-        text_x = panel_x + 40
-        text_y = panel_y + 40 + self.guide_scroll
+        text_line_height = font.get_linesize()
+        text_x = panel_x + 90  # 从70改成90，再增加左边距
+        text_y = panel_y + 30 + self.guide_scroll
 
+        start_y = panel_y + 30
+        max_draw_y = panel_y + target_height - 30
+
+        max_text_width = target_width - 180  # 从140改成180，左右各90px边距，所以减180
+
+        all_lines = []
         for line in self.guide_text:
-            surf = font.render(line, True, (0, 0, 0))
-            self.screen.blit(surf, (text_x, text_y))
-            text_y += 28
+            if line == "":
+                all_lines.append("")
+            else:
+                text_surf = font.render(line, True, (0, 0, 0))
+                if text_surf.get_width() <= max_text_width:
+                    all_lines.append(line)
+                else:
+                    words = line.split(" ")
+                    current_line = ""
+                    for word in words:
+                        test_line = current_line + " " + word if current_line else word
+                        test_surf = font.render(test_line, True, (0, 0, 0))
+                        if test_surf.get_width() <= max_text_width:
+                            current_line = test_line
+                        else:
+                            if current_line:
+                                all_lines.append(current_line)
+                            current_line = word
+                    if current_line:
+                        all_lines.append(current_line)
 
-        close_x = panel_x + paper.get_width() - 60
-        close_y = panel_y + 20
+        total_content_height = len(all_lines) * text_line_height
+        viewport_height = target_height - 60
+        self.max_scroll = max(0, total_content_height - viewport_height)
 
-        self.closeGuide_button = Button(pygame.image.load("ui/buttonImages/closeButton.png").convert_alpha(),close_x,close_y,"",self.button_font,self.close_guide)
+        if self.guide_scroll > 0:
+            self.guide_scroll = 0
+        if self.guide_scroll < -self.max_scroll:
+            self.guide_scroll = -self.max_scroll
+
+        text_y = panel_y + 30 + self.guide_scroll
+
+        for line in all_lines:
+            if text_y + text_line_height > max_draw_y:
+                break
+            elif text_y >= start_y:
+                surf = font.render(line, True, (0, 0, 0))
+                self.screen.blit(surf, (text_x, text_y))
+            text_y += text_line_height
+
+        close_x = panel_x + target_width - 25
+        close_y = panel_y + 25
+
+        close_surf = pygame.image.load("ui/buttonImages/closeButton.png").convert_alpha()
+        close_surf = pygame.transform.scale(close_surf, (40, 40))
+
+        self.closeGuide_button = Button(close_surf, close_x, close_y, "", self.button_font, self.close_guide)
+
         self.closeGuide_button.update(self.screen)
     #/guide
 
@@ -345,9 +401,16 @@ class playScreen(screenBase):
         if self.showing_guide:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 4:
-                    self.guide_scroll += 20
+                    self.guide_scroll += 24
                 elif event.button == 5:
-                    self.guide_scroll -= 20
+                    self.guide_scroll -= 24
+
+                if self.guide_scroll > 0:
+                    self.guide_scroll = 0
+
+                if hasattr(self, 'max_scroll'):
+                    if self.guide_scroll < -self.max_scroll:
+                        self.guide_scroll = -self.max_scroll
 
                 if hasattr(self, "closeGuide_button"):
                     if self.closeGuide_button.rect.collidepoint(event.pos):
@@ -554,6 +617,10 @@ class playScreen(screenBase):
     def draw_objects(self):
         self.screen.fill((212, 212, 212))
         self.screen.blit(self.background_surf, (0, 0))
+        self.screen.blit(self.stateArrow_surf, (620, 390))
+        self.screen.blit(self.playerMe_surf, (600, 420))
+        self.screen.blit(self.player2_surf, (600, 200))
+        self.screen.blit(self.player3_surf, (300, 305))
         # self.select_frame.draw(self.screen)
         # self.title_options.draw(self.screen)
         # self.title_players.draw(self.screen)
