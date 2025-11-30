@@ -184,8 +184,8 @@ class MEDIUM(playerDecision):
         target_cards=[]
         for each_group in color_potential_groups:
             target_cards=target_cards+self.get_missing_cards('color',each_group)
-        for each_group in color_potential_groups:
-            target_cards=target_cards+self.get_missing_cards('color',each_group)
+        for each_group in number_potential_groups:
+            target_cards=target_cards+self.get_missing_cards('number',each_group)
         return target_cards
     
     #checks for duplicate cards in hand as that is the most ideal candidate for dumping
@@ -220,19 +220,47 @@ class MEDIUM(playerDecision):
             duplicity = self.get_duplicity(each_card,hand)
             weights[each_card] =[card_color_weight,card_number_weight,duplicity]
         return weights
-    def update_discardCandidates(self,Card):
-        self.discardCandidates= self.discardCandidates + Card
+    def update_discardCandidates(self,listOfCard):
+        self.discardCandidates= self.discardCandidates + listOfCard
+        self.discardCandidates=list(set(list(self.discardCandidates))) #filters and removes more than 1 instance in discardable pile
     #TODO: Core logic for player 'MEDIUM'
     def choose(self):
-        current_hand = 
+        
+        current_hand = self.game_state.current_player.hand
         valid_group = self.get_discard_group()
+
         if valid_group!=None:
-            return PlayerMove.DISCARD
+            move= PlayerMove.DISCARD_VALID_CARDS
+        elif len(current_hand)>=17: #17 is arbitrary, can alter to check performance; \\
+            # basically prioritises draw 1 and discard 1 when hand volume higher than 17 # TODO: maybe prioritise passing here?
+            move = PlayerMove.DRAW_ONE
         else:
-            self.get_decisionWeights()
+            weights=self.get_decisionWeights(current_hand)
+            duplicate_cards =any([weight_value[2] > 1] for card, weight_value in weights.items())
+            if duplicate_cards:
+                move= PlayerMove.DRAW_ONE
+            else:
+                for card,weight_value in weights.items():
+                    pass
+                    # TO DO : generate probability of receiving target_cards using card weights from deck | opp1 | opp2
 
+                move = PlayerMove.END_TURN #last_possible_move
 
-
+        #remaining = DRAW_ONE, DRAW, TAKE
+        self.prev_move = move
+        return move
+    
+    # as per gamelogic, discard_card_from_hand is only \\
+    # called when previous move was PlayerMove.DRAW_ONE
+    def discard_card_from_hand(self) -> int:
+        current_hand=self.game_state.current_player.hand
+        weights=self.get_decisionWeights(current_hand)
+        duplicate_cards = [card for card, weight_value in weights.items() if weight_value[2] > 1]
+        discardCandidates=list(set(list(duplicate_cards))) #filters and removes more than 1 instance in discardABLE pile
+        chosenDiscardCard=random.choice(self.discardCandidates)
+        #TODO: if chosenDiscardCard in HV_groups and weight==3 or more, choose least weighed card
+        return chosenDiscardCard
+    
     #returns single chosen move and calls updateAvailableMoves
     def get_move(self):
         move=self.choose()
