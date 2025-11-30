@@ -11,6 +11,7 @@ from pygame import Color
 
 class State(Enum):
     WON = auto()
+    LOST = auto()
     CONTINUE = auto()
 
 

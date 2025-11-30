@@ -7,7 +7,7 @@ from Logic.computerLogic.playerDecision import EASY
 from ui.button import Button
 from ui.objects import imageObject
 from ui.text_object import textObject
-from Logic.Classes import PlayerType, Player, Deck, GameState, CardColor, PlayerMove
+from Logic.Classes import PlayerType, Player, Deck, GameState, CardColor, PlayerMove, State
 from ui.card_sprites import CardSprites
 from ui.card_visual import CardVisual
 from ui.player_hand import PlayerHand
@@ -178,15 +178,32 @@ class playScreen(screenBase):
         self.choose_start_player()
         self.reset_state()
 
-        self.draw_button = Button(orangeButton_surf, 475, 340, "Draw", button_font, self.show_draw_options)
-        self.steal_button = Button(orangeButton_surf, 585, 340, "Steal", button_font, self.activate_stealing)
-        self.trade_button = Button(orangeButton_surf, 695, 340, "Trade", button_font, self.activate_trading)
-        self.discard_button = Button(orangeButton_surf, 805, 340, "Discard", button_font, self.handle_discard)
-        self.end_turn = Button(orangeButton_surf, 915, 340, "End Turn", button_font, self.trigger_end_turn)
+        # self.draw_button = Button(orangeButton_surf, 475, 340, "Draw", button_font, self.show_draw_options)
+        # self.steal_button = Button(orangeButton_surf, 585, 340, "Steal", button_font, self.activate_stealing)
+        # self.trade_button = Button(orangeButton_surf, 695, 340, "Trade", button_font, self.activate_trading)
+        # self.discard_button = Button(orangeButton_surf, 805, 340, "Discard", button_font, self.handle_discard)
+        # self.end_turn = Button(orangeButton_surf, 915, 340, "End Turn", button_font, self.trigger_end_turn)
+        #
+        # self.playForMe_button = Button(orangeButton_surf, 980, 40, "Play for me", button_font, self.play_for_me_button)
+        # self.guide_button = Button(orangeButton_surf, 1090, 40, "Guide", button_font, None)
+        # self.pause_button = Button(orangeButton_surf, 1200, 40, "Pause", button_font, self.pause_game)
+        #
+        # self.resume_button = Button(orangeButton_surf, center_x, center_y - 80, "Resume", button_font, self.resume_game)
+        # self.restart_button = Button(orangeButton_surf, center_x, center_y, "Restart", button_font, self.restart_game)
+        # self.backMenu_button = Button(orangeButton_surf, center_x, center_y + 80, "Menu", button_font, self.navigate_to_menu_screen)
+        # self.overlay = pygame.Surface((1280, 720), pygame.SRCALPHA)
+        # self.overlay.fill((0, 0, 0, 200))
 
-        self.playForMe_button = Button(orangeButton_surf, 980, 40, "Play for me", button_font, self.play_for_me_button)
-        self.guide_button = Button(orangeButton_surf, 1090, 40, "Guide", button_font, None)
-        self.pause_button = Button(orangeButton_surf, 1200, 40, "Pause", button_font, self.pause_game)
+        self.draw_button = Button(actionButton_surf, 460, 340, "Draw", button_font, self.show_draw_options)
+        self.steal_button = Button(actionButton_surf, 580, 340, "Steal", button_font, self.activate_stealing)
+        self.trade_button = Button(actionButton_surf, 700, 340, "Trade", button_font, self.activate_trading)
+        self.discard_button = Button(actionButton_surf, 820, 340, "Discard", button_font, self.handle_discard)
+        self.end_turn = Button(blue_surf, 1070, 660, "End Turn", button_font, self.trigger_end_turn)
+        self.pass_turn = Button(actionButton_surf, 1190, 660, "Pass", button_font, self.trigger_end_turn)
+
+        self.guide_button = Button(guide_surf, 1025, 40, "Guide", button_font, self.open_guide)
+        self.playForMe_button = Button(playForMe_surf, 1145, 40, "", button_font, self.play_for_me_button)
+        self.pause_button = Button(pause_surf, 1245, 40, "", button_font, self.pause_game)
 
         self.resume_button = Button(orangeButton_surf, center_x, center_y - 80, "Resume", button_font, self.resume_game)
         self.restart_button = Button(orangeButton_surf, center_x, center_y, "Restart", button_font, self.restart_game)
@@ -204,27 +221,25 @@ class playScreen(screenBase):
         self.permissible_moves = get_permissible_moves(self.game_state)
         self.done_moves = []
         self.draw_sub_buttons = []
-        self.available_cards_for_steal_or_trade = []
+        self.available_cards = []
         self.is_stealing = False
         self.is_trading = False
 
+    def restart_game(self):
+        self.game_state.reset_state()
+        self.create_players()
+        self.deal_hands()
+        self.choose_start_player()
+        self.is_paused = False
+        self.reset_state()
 
-        self.draw_button = Button(actionButton_surf, 460, 340, "Draw", button_font, self.show_draw_options)
-        self.steal_button = Button(actionButton_surf, 580, 340, "Steal", button_font, self.activate_stealing)
-        self.trade_button = Button(actionButton_surf, 700, 340, "Trade", button_font, self.activate_trading)
-        self.discard_button = Button(actionButton_surf, 820, 340, "Discard", button_font, self.handle_discard)
-        self.end_turn = Button(blue_surf, 1070, 660, "End Turn", button_font, self.trigger_end_turn)
-        self.pass_turn = Button(actionButton_surf, 1190, 660, "Pass", button_font, self.trigger_end_turn)
+    def navigate_to_menu_screen(self):
+        self.game_state.reset_state()
+        return menuScreen(self.screen, self.game_state), None
 
-        self.guide_button = Button(guide_surf, 1025, 40, "Guide", button_font, self.open_guide)
-        self.playForMe_button = Button(playForMe_surf, 1145, 40, "", button_font, None)
-        self.pause_button = Button(pause_surf, 1245, 40, "", button_font, None)
-
-        self.resume_button = Button(orangeButton_surf, center_x, center_y - 80, "Resume", button_font, None)
-        self.restart_button = Button(orangeButton_surf, center_x, center_y, "Restart", button_font, None)
-        self.backMenu_button = Button(orangeButton_surf, center_x, center_y + 80, "Menu", button_font, None)
-        self.overlay = pygame.Surface((1280, 720), pygame.SRCALPHA)
-        self.overlay.fill((0, 0, 0, 200))
+    def play_for_me_button(self):
+        self.game_state.computer_playing_for_human = True
+        return None, EASY(self.game_state, self.permissible_moves)
 
     #/guide
     def load_guide_text(self):
@@ -344,7 +359,8 @@ class playScreen(screenBase):
         total_cards = list(self.game_state.deck.cards)
         for player in [self.game_state.current_player] + list(self.game_state.players):
             # print(f"{player.name}'s hand size: {len(player.hand)}!")
-            total_cards += list(player.hand)
+            if player.hand is not None:
+                total_cards += list(player.hand)
 
         # print(f"Total Cards: {len(total_cards)}")
 
@@ -397,12 +413,16 @@ class playScreen(screenBase):
             for player in self.game_state.players:
                 if len(player.hand) == 0:
                     print(f'The winner is {player.name}')
-                    # is_endgame = True
+                    if player.type == PlayerType.HUMAN:
+                        self.game_state.state = State.WON
+                    else:
+                        self.game_state.state = State.LOST
+                    is_endgame = True
                     break
 
             self.game_state.reset_state()
             # TODO replace with Game Over Screen
-            current_screen = menuScreen(self.screen, self.game_state)
+            current_screen = EndScreen(self.screen, self.game_state)
             print(f"current screen:  {current_screen}")
             self.close = True
             return
@@ -627,7 +647,7 @@ class OptionSelectScreen(screenBase):
 
         greenButton_surf = pygame.image.load("ui/buttonImages/greenButton.png").convert_alpha()
         greenButton_surf_selected = pygame.image.load("ui/buttonImages/selectedGreen.png").convert_alpha()
-        blueButton_surf = pygame.image.load("ui/buttonImages/mediumBlue.png").convert_alpha()
+        blueButton_surf = pygame.image.load("ui/buttonImages/blueButton.png").convert_alpha()
         blueButton_surf_selected = pygame.image.load("ui/buttonImages/selectedBlue.png").convert_alpha()
         redButton_surf = pygame.image.load("ui/buttonImages/redButton.png").convert_alpha()
         redButton_surf_selected = pygame.image.load("ui/buttonImages/selectedRed.png").convert_alpha()
@@ -724,7 +744,6 @@ class OptionSelectScreen(screenBase):
         self.medium_button.update(self.screen)
         self.difficult_button.update(self.screen)
 
-        self.player1_button.update(self.screen)
         self.player2_button.update(self.screen)
         self.player3_button.update(self.screen)
 
@@ -791,41 +810,9 @@ class EndScreen(screenBase):
         self.restart_button.update(self.screen)
         self.backMenu_button.update(self.screen)
 
+        # print(f"Game state state: {self.game_state.state}")
         if self.game_state.state == State.WON:
             self.WinResult.draw(self.screen)
         elif self.game_state.state == State.LOST:
             self.LoseResult.draw(self.screen)
 
-
-#/guide
-    def load_guide_text(self):
-        with open("ui/guide_text/nottyGuide.txt", "r", encoding="utf-8") as f:
-            return f.read().splitlines()
-
-    def open_guide(self):
-        self.showing_guide = True
-        self.guide_scroll = 0
-
-    def close_guide(self):
-        self.showing_guide = False
-
-    def draw_guide(self):
-        self.screen.blit(self.overlay, (0, 0))
-        panel_x, panel_y = 200, 80
-        paper = pygame.image.load("ui/images/guidePaper.png").convert_alpha()
-        self.screen.blit(paper, (panel_x, panel_y))
-        font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 20)
-        text_x = panel_x + 40
-        text_y = panel_y + 40 + self.guide_scroll
-
-        for line in self.guide_text:
-            surf = font.render(line, True, (0, 0, 0))
-            self.screen.blit(surf, (text_x, text_y))
-            text_y += 28
-
-        close_x = panel_x + paper.get_width() - 60
-        close_y = panel_y + 20
-
-        self.closeGuide_button = Button(pygame.image.load("ui/buttonImages/closeButton.png").convert_alpha(),close_x,close_y,"",self.button_font,self.close_guide)
-        self.closeGuide_button.update(self.screen)
-    #/guide

@@ -1,6 +1,6 @@
 import pygame
 import sys
-from Logic.Classes import Deck, GameState
+from Logic.Classes import Deck, GameState, State
 from ui import screens
 from collections import deque
 
