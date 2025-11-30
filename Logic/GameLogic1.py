@@ -1,10 +1,10 @@
 import uuid
 from collections import deque
 
-from Class.Classes import PlayerType, Player, Deck, GameState
+from Logic.Classes import PlayerType, Player, Deck, GameState
 from Logic.utils import handle_action_draw_3, handle_action_steal, handle_action_swap, handle_action_discard_group, \
     all_hands_non_empty, get_permissible_moves, TurnContext
-from computerLogic.playerDecision import EASY, MEDIUM, HARD
+from Logic.computerLogic.playerDecision import EASY, MEDIUM, HARD
 
 def run_game():
     # Initialise Players

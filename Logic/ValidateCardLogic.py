@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-from Class.Classes import Card, CardColor
+from Logic.Classes import Card, CardColor
 
 
 def colours_identical(cards: List[Card]) -> list[Card] | None:

@@ -1,8 +1,8 @@
 from typing import List
 
-from Class.Classes import PlayerType, Player, Deck, GameState, PlayerMove
+from Logic.Classes import PlayerType, Player, Deck, GameState, PlayerMove
 from Logic.ValidateCardLogic import contains_valid_group
-from computerLogic.playerDecision import playerDecision, HARD, MEDIUM, EASY
+from Logic.computerLogic.playerDecision import playerDecision, HARD, MEDIUM, EASY
 
 
 # Turns Tracking: tracks the state of the current turn to enforce "at most per turn" rules

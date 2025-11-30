@@ -3,14 +3,14 @@ import sys
 import uuid
 from collections import deque
 
-from computerLogic.playerDecision import EASY
+from Logic.computerLogic.playerDecision import EASY
 from ui.button import Button
 from ui.objects import imageObject
 from ui.text_object import textObject
-from Class.Classes import PlayerType, Player, Deck, GameState, CardColor, PlayerMove
-from cards.card_sprites import CardSprites
-from visuals.card_visual import CardVisual
-from game.player_hand import PlayerHand
+from Logic.Classes import PlayerType, Player, Deck, GameState, CardColor, PlayerMove
+from ui.card_sprites import CardSprites
+from ui.card_visual import CardVisual
+from ui.player_hand import PlayerHand
 from Logic.utils import TurnContext, handle_action_draw_3, handle_action_steal, handle_action_swap, \
     handle_action_discard_group, get_permissible_moves, get_computer_player_decision, all_hands_non_empty
 import random
@@ -473,7 +473,7 @@ class playScreen(screenBase):
         self.permissible_moves = get_permissible_moves(self.game_state)
         for move in self.done_moves:
             self.permissible_moves.remove(move)
-        sprites = CardSprites("cards")
+        sprites = CardSprites("cardsImages")
         # Establishing player hands' positions
         hand_positions = [
             PlayerHand(700, 70, -40, "horizontal"),

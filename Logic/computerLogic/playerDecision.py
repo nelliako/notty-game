@@ -6,7 +6,7 @@
 #                        
 import random
 
-from Class.Classes import GameState, Player, PlayerMove
+from Logic.Classes import GameState, Player, PlayerMove
 
 # Base Class for computer_player_decision Players 'EASY', 'MEDIUM' & 'HARD'
 class playerDecision:

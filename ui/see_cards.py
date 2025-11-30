@@ -1,7 +1,7 @@
 import pygame
-from cards.card_sprites import CardSprites
-from visuals.card_visual import CardVisual
-from game.player_hand import PlayerHand
+from ui.card_sprites import CardSprites
+from ui.card_visual import CardVisual
+from ui.player_hand import PlayerHand
 
 def see_cards():
     pygame.init()
@@ -9,7 +9,7 @@ def see_cards():
     screen = pygame.display.set_mode((1280, 720))
     pygame.display.set_caption("Notty UI Test")
 
-    sprites = CardSprites("cards")
+    sprites = CardSprites("cardsImages")
 
     hand = PlayerHand(700, 70, -40, "horizontal")
 
