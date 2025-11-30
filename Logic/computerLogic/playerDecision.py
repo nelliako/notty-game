@@ -85,6 +85,8 @@ class MEDIUM(playerDecision):
         super().__init__(game_state)
         self.game_state = game_state
         self.available_moves = valid_moves
+        self.drawedOne = False
+        self.discardCandidates=[]
     
     # updates the list of available moves for the current player
     def updateAvailableMoves(self,chosenMove):
@@ -177,10 +179,8 @@ class MEDIUM(playerDecision):
             return [Card(color,group_number) for color in missing_colors]
         return None
     
-    def get_target_cards(self,current_hand):
-        current_hand= self.game_state.current_player.hand
-        color_potential_groups = self.colors_potential(current_hand)
-        number_potential_groups = self.numbers_potential(current_hand)
+    def get_target_cards(self,hand):
+        color_potential_groups,number_potential_groups = self.get_potential_groups(hand)
         target_cards=[]
         for each_group in color_potential_groups:
             target_cards=target_cards+self.get_missing_cards('color',each_group)
@@ -220,15 +220,17 @@ class MEDIUM(playerDecision):
             duplicity = self.get_duplicity(each_card,hand)
             weights[each_card] =[card_color_weight,card_number_weight,duplicity]
         return weights
-
+    def update_discardCandidates(self,Card):
+        self.discardCandidates= self.discardCandidates + Card
     #TODO: Core logic for player 'MEDIUM'
     def choose(self):
-        discard_1
+        current_hand = 
         valid_group = self.get_discard_group()
         if valid_group!=None:
             return PlayerMove.DISCARD
-        elif
-            get_decisionWeights
+        else:
+            self.get_decisionWeights()
+
 
 
     #returns single chosen move and calls updateAvailableMoves
