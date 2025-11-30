@@ -5,8 +5,9 @@
 #                                                           
 #                        
 import random
-
-from Logic.Classes import GameState, Player, PlayerMove
+from typing import List, Dict
+from Logic.Classes import GameState, Player, PlayerMove, Card, CardColor
+from Logic.ValidateCardLogic import *
 
 # Base Class for computer_player_decision Players 'EASY', 'MEDIUM' & 'HARD'
 class playerDecision:
@@ -50,19 +51,12 @@ class EASY(playerDecision):
         #     self.available_moves.remove(self.temp)
         # return self.available_moves
     
-    # core logic for player 'EASY' aka my dummy
+    # core logic for player 'EASY' aka my dearest dummy
     #retrieves and returns a random move from allowed valid moves for the player and also a parameter defining number of cards or chosen player
+
     def choose(self):
         temp=random.choice(self.available_moves)
-        # Note  : Parameter defines number of cards for DRAW-N and defines playerNumber for  TAKE
-        if temp == PlayerMove.DRAW or temp ==PlayerMove.TAKE:
-            parameter = random.choice([1,2,3])
-            return temp, parameter
-        elif temp == PlayerMove.TAKE:
-            parameter = random.choice([0,1])   #assuming deque 'players' in gamestate has the remaining 2 players with indices 0,1
-            return temp, parameter
-
-        return temp,0
+        return temp
 
     def choose_number_of_card_to_draw(self, max_allowable_draw) -> int:
         if max_allowable_draw == 1:
@@ -77,8 +71,7 @@ class EASY(playerDecision):
 
     def discard_card_from_hand(self) -> int:
         return random.choice(range(len(self.GameState.current_player.hand)))
-
-
+    
     #returns chosen move and updates latest AvailableMoves
     def get_move(self):
         move=self.choose()
@@ -99,10 +92,144 @@ class MEDIUM(playerDecision):
         if chosenMove!=PlayerMove.DISCARD:
             self.available_moves.remove(self.temp)
         return self.available_moves
+    def get_discard_group(self):
+        valid_group= contains_valid_group(self.game_state.current_player.hand)
+        return valid_group
     
+
+    def numbers_potential(self,cards: List[Card]) -> list[list[Card]] | None:
+        number_cards: Dict[int, List[Card]] = {}
+
+        for card in set(cards):
+            number = card.number
+            if number not in number_cards:
+                number_cards[number] = []
+                number_cards[number].append(card)
+            else:
+                number_cards[number].append(card)
+
+        potential_number_groups: List[List[Card]] =[]
+
+        for number in number_cards:
+            potential_number_groups.append(number_cards[number])
+        return potential_number_groups
+    
+    def colors_potential(self, cards: List[Card]) -> list[list[Card]] | None:
+        
+        # number of cards per color
+        colors = {}
+        # stores card for each color & number
+        colors_cards: Dict[CardColor, Dict[int, Card]] = {}
+
+        for card in set(cards):
+            color = card.color
+            number = card.number
+
+            if color not in colors_cards:
+                colors[color] = 1
+                colors_cards[color] = {}
+            else:
+                colors[color] = colors[color] + 1
+
+            if not colors_cards[color].get(number, False):
+                colors_cards[color][number] = card
+            else:
+                colors_cards[color][number] = card
+
+                #edit alter
+        potential_color_groups:List[List[Card]] =[]
+
+        for color in colors_cards:
+            keys = sorted(list(colors_cards[color].keys()))
+            consecutive_numbers = 0
+            for i in range(len(keys)):
+                if (keys[i] + 1) in keys:
+                    consecutive_numbers += 1
+            if consecutive_numbers <= 2:
+                potential_color_groups.append( [colors_cards[color][number] for number in colors_cards[color]])
+
+        return potential_color_groups
+    
+    def get_missing_cards(self, type_of_group: str, a_potential_group: List[Card]) -> List[Card] | None:
+        if type_of_group=='color':
+            if not a_potential_group:
+                return None
+            group_color = a_potential_group[0].color
+            group_numbers = {c.number for c in a_potential_group}
+            candidates = set()
+            for n in group_numbers:
+                if (n - 1) not in group_numbers:
+                    candidates.add(n - 1)
+                if (n + 1) not in group_numbers:
+                    candidates.add(n + 1)
+            candidates = {x for x in candidates if 1 <= x <= 9}
+            if not candidates:
+                return None
+            return [Card(group_color, num) for num in sorted(candidates)]
+
+        if type_of_group=='number':
+            group_number=a_potential_group[0].number
+            group_colors = {c.color for c in a_potential_group}
+            all_colors = {CardColor.RED, CardColor.GREEN, CardColor.BLUE, CardColor.BLACK, CardColor.YELLOW}
+            missing_colors = list(all_colors - group_colors)
+            if not missing_colors:
+                return None
+            return [Card(color,group_number) for color in missing_colors]
+        return None
+    
+    def get_target_cards(self,current_hand):
+        current_hand= self.game_state.current_player.hand
+        color_potential_groups = self.colors_potential(current_hand)
+        number_potential_groups = self.numbers_potential(current_hand)
+        target_cards=[]
+        for each_group in color_potential_groups:
+            target_cards=target_cards+self.get_missing_cards('color',each_group)
+        for each_group in color_potential_groups:
+            target_cards=target_cards+self.get_missing_cards('color',each_group)
+        return target_cards
+    
+    #checks for duplicate cards in hand as that is the most ideal candidate for dumping
+    def get_duplicity(target: Card, hand: list[Card]) -> int:
+        if target is None or not hand:
+            return 0
+        count= sum(1 for c in hand if c.color == target.color and c.number == target.number)
+        return count
+    
+    def get_potential_groups(self,defined_hand):
+        color_potential_groups = self.colors_potential(defined_hand)
+        number_potential_groups = self.numbers_potential(defined_hand)
+        return [color_potential_groups,number_potential_groups]
+
+    def get_decisionWeights(self,hand):
+        color_potential_groups,number_potential_groups = self.get_potential_groups(hand)
+        weights: Dict[Card, List[int]] = {}
+        for each_card in hand:
+            card_color_weight=0
+            card_number_weight=0
+            duplicity=0
+            for each_group in color_potential_groups:
+                if each_card in each_group:
+                    card_color_weight+=1 #adds 1 for every color group the card is a member of
+                else:
+                    card_color_weight-=1 #subtracts 1 for every color group  the card is not a member of
+            for each_group in number_potential_groups:
+                if each_card in each_group:
+                    card_number_weight+=1 #adds 1 for every color group the card is a member of
+                else:
+                    card_number_weight-=1 #subtracts 1 for every color group  the card is not a member of
+            duplicity = self.get_duplicity(each_card,hand)
+            weights[each_card] =[card_color_weight,card_number_weight,duplicity]
+        return weights
+
     #TODO: Core logic for player 'MEDIUM'
     def choose(self):
-        pass
+        discard_1
+        valid_group = self.get_discard_group()
+        if valid_group!=None:
+            return PlayerMove.DISCARD
+        elif
+            get_decisionWeights
+
 
     #returns single chosen move and calls updateAvailableMoves
     def get_move(self):
@@ -123,6 +250,11 @@ class HARD(playerDecision):
             self.available_moves.remove(self.temp)
         return self.available_moves
     
+    
+
+
+
+
     #TODO: Core logic for player 'HARD'
     def choose(self):
         pass

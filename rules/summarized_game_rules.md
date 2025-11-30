@@ -54,7 +54,8 @@ PLAYERS : 2 , or 3
 
 ### MOVE 4:
     > Discard Valid Group in Hand
-    ***valid group = set of 3 same color consecutives or , a set of 4 same number different colors
+    ***valid group = set of 3 same color , number consecutives or ,
+                     a set of 4 same number different colors
 
 ### MOVE 5:
     > Pass turn
