@@ -1,0 +1,72 @@
+NOTTY – How to Play
+
+What the game is
+
+Notty is a simple open-hand card game for 2–3 players.
+All cards stay face-up, so everyone can see what everyone else has.
+
+Cards come in 5 colors (red, green, yellow, black, blue) and are numbered 1–9.
+Every color–number combo has two copies. The full deck has 90 cards.
+
+
+
+Getting started
+
+
+Shuffle the deck.
+
+Deal 4 cards to each player.
+
+Your hand is face-up the whole game.
+
+The deck stays face-down.
+
+Your turn
+
+On your turn, you can do any of the actions below, in any order:
+
+Draw up to 3 cards
+
+Draw one card at a time, up to a maximum of three.
+You don’t see what you drew until you stop drawing.
+
+Take a random card from another player(Steal)
+
+Pick someone and take one of their cards at random.
+
+Draw 1 card and then discard 1(Trade)
+
+Simple as it sounds.
+
+Discard groups
+
+You can discard as many valid groups as you want. A valid group is:
+
+A run of 3 or more numbers in a row, all same color
+(example: blue 4, blue 5, blue 6)
+
+or
+
+A set of 4 or more cards with the same number, all different colors
+(example: red 4, blue 4, green 4, yellow 4)
+
+Whenever cards are discarded, they go back into the deck and the deck gets reshuffled.
+
+Pass
+
+You can also do nothing.
+
+
+
+Hand limit
+
+You can never have more than 20 cards.
+If an action would push you over 20, you can’t do it.
+
+
+
+Winning
+
+You win the moment your hand becomes empty.
+This can happen because you discarded your last cards or someone stole your final card.
+As soon as a hand hits zero, the game stops.

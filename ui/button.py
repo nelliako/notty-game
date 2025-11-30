@@ -16,8 +16,15 @@ class Button(visualObject):
         self.text = self.font.render(self.text_input, True, 'Black')
         self.text_rect = self.text.get_rect(center=(self.x_pos, self.y_pos))
         self.on_click = on_click
+        self.normal_image = image
+        self.selected_image = None
+        self.is_selected = False
 
     def update(self, screen):
+        if self.is_selected and self.selected_image is not None:
+            self.image = self.selected_image
+        else:
+            self.image = self.normal_image
         screen.blit(self.image, self.rect)
         screen.blit(self.text, self.text_rect)
 

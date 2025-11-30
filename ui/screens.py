@@ -145,14 +145,32 @@ class playScreen(screenBase):
         self.is_paused = False
         center_x, center_y = 640, 360
 
+        self.guide_text = self.load_guide_text()
+        self.guide_scroll = 0
+        self.showing_guide = False
+
         self.background_surf = pygame.image.load("ui/images/Vector.png").convert_alpha()
+        self.playerMe_surf = pygame.image.load("ui/images/playerMe.png").convert_alpha()
+        self.player2_surf = pygame.image.load("ui/images/player2.png").convert_alpha()
+        self.player3_surf = pygame.image.load("ui/images/player3.png").convert_alpha()
+        self.stateArrow_surf = pygame.image.load("ui/images/arrow.png").convert_alpha()
 
         orangeButton_surf = pygame.image.load("ui/buttonImages/orangeButton.png").convert_alpha()
         orangeButton_surf = pygame.transform.scale(orangeButton_surf, (100, 30))
+        roundOrange_surf = pygame.image.load("ui/buttonImages/roundOrange.png").convert_alpha()
+        actionButton_surf = pygame.image.load("ui/buttonImages/duckyellowbutton.png").convert_alpha()
+        actionButton_surf = pygame.transform.scale(actionButton_surf, (100, 50))
+        blue_surf = pygame.image.load("ui/buttonImages/bluebutton.png").convert_alpha()
+        blue_surf = pygame.transform.scale(blue_surf, (100, 50))
+        playForMe_surf = pygame.image.load("ui/buttonImages/playForMebutton.png").convert_alpha()
+        playForMe_surf = pygame.transform.scale(playForMe_surf, (135, 40))
+        pause_surf = pygame.image.load("ui/buttonImages/pause.png").convert_alpha()
+        pause_surf = pygame.transform.scale(pause_surf, (40, 40))
+        guide_surf = pygame.transform.scale(blue_surf, (80, 40))
 
         button_font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 13)
         self.button_font = button_font
-        self.smallButton_surf = pygame.transform.scale(orangeButton_surf, (30, 30))
+        self.smallButton_surf = pygame.transform.scale(roundOrange_surf, (30, 30))
 
         # Preparing the "start state"
         self.create_players() 
@@ -190,21 +208,56 @@ class playScreen(screenBase):
         self.is_stealing = False
         self.is_trading = False
 
-    def restart_game(self):
-        self.game_state.reset_state()
-        self.create_players()
-        self.deal_hands()
-        self.choose_start_player()
-        self.is_paused = False
-        self.reset_state()
 
-    def navigate_to_menu_screen(self):
-        self.game_state.reset_state()
-        return menuScreen(self.screen, self.game_state), None
+        self.draw_button = Button(actionButton_surf, 460, 340, "Draw", button_font, self.show_draw_options)
+        self.steal_button = Button(actionButton_surf, 580, 340, "Steal", button_font, self.activate_stealing)
+        self.trade_button = Button(actionButton_surf, 700, 340, "Trade", button_font, self.activate_trading)
+        self.discard_button = Button(actionButton_surf, 820, 340, "Discard", button_font, self.handle_discard)
+        self.end_turn = Button(blue_surf, 1070, 660, "End Turn", button_font, self.trigger_end_turn)
+        self.pass_turn = Button(actionButton_surf, 1190, 660, "Pass", button_font, self.trigger_end_turn)
 
-    def play_for_me_button(self):
-        self.game_state.computer_playing_for_human = True
-        return None, EASY(self.game_state, self.permissible_moves)
+        self.guide_button = Button(guide_surf, 1025, 40, "Guide", button_font, self.open_guide)
+        self.playForMe_button = Button(playForMe_surf, 1145, 40, "", button_font, None)
+        self.pause_button = Button(pause_surf, 1245, 40, "", button_font, None)
+
+        self.resume_button = Button(orangeButton_surf, center_x, center_y - 80, "Resume", button_font, None)
+        self.restart_button = Button(orangeButton_surf, center_x, center_y, "Restart", button_font, None)
+        self.backMenu_button = Button(orangeButton_surf, center_x, center_y + 80, "Menu", button_font, None)
+        self.overlay = pygame.Surface((1280, 720), pygame.SRCALPHA)
+        self.overlay.fill((0, 0, 0, 200))
+
+    #/guide
+    def load_guide_text(self):
+        with open("ui/guide_text/nottyGuide.txt", "r", encoding="utf-8") as f:
+            return f.read().splitlines()
+
+    def open_guide(self):
+        self.showing_guide = True
+        self.guide_scroll = 0
+
+    def close_guide(self):
+        self.showing_guide = False
+
+    def draw_guide(self):
+        self.screen.blit(self.overlay, (0, 0))
+        panel_x, panel_y = 200, 80
+        paper = pygame.image.load("ui/images/guidePaper.png").convert_alpha()
+        self.screen.blit(paper, (panel_x, panel_y))
+        font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 20)
+        text_x = panel_x + 40
+        text_y = panel_y + 40 + self.guide_scroll
+
+        for line in self.guide_text:
+            surf = font.render(line, True, (0, 0, 0))
+            self.screen.blit(surf, (text_x, text_y))
+            text_y += 28
+
+        close_x = panel_x + paper.get_width() - 60
+        close_y = panel_y + 20
+
+        self.closeGuide_button = Button(pygame.image.load("ui/buttonImages/closeButton.png").convert_alpha(),close_x,close_y,"",self.button_font,self.close_guide)
+        self.closeGuide_button.update(self.screen)
+    #/guide
 
     def handle_discard(self):
         handle_action_discard_group(self.game_state, None)
@@ -274,7 +327,19 @@ class playScreen(screenBase):
     def process_event(self, event):
         global current_screen
 
-        # print(f"Game State Deck size: {len(self.game_state.deck.cards)}")
+        if self.showing_guide:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 4:
+                    self.guide_scroll += 20
+                elif event.button == 5:
+                    self.guide_scroll -= 20
+
+                if hasattr(self, "closeGuide_button"):
+                    if self.closeGuide_button.rect.collidepoint(event.pos):
+                        self.close_guide()
+            return
+
+        print(f"Game State Deck size: {len(self.game_state.deck.cards)}")
 
         total_cards = list(self.game_state.deck.cards)
         for player in [self.game_state.current_player] + list(self.game_state.players):
@@ -425,15 +490,19 @@ class playScreen(screenBase):
                     return
 
         if not all_hands_non_empty(self.game_state):
-            for player in self.game_state.players:
-                if len(player.hand) == 0:
-                    print(f'The winner is {player.name}')
-                    # is_endgame = True
-                    break
+            if not all_hands_non_empty(self.game_state):
+                for player in self.game_state.players:
+                    if len(player.hand) == 0:
+                        print(f'The winner is {player.name}')
+                        if player.type == PlayerType.HUMAN:
+                            self.game_state.state = State.WON
+                        else:
+                            self.game_state.state = State.LOST
+                        # is_endgame = True
+                        break
 
             self.game_state.reset_state()
-            # TODO replace with Game Over Screen
-            current_screen = menuScreen(self.screen, self.game_state)
+            current_screen = EndScreen(self.screen, self.game_state)
             print(f"current screen:  {current_screen}")
             self.close = True
             return
@@ -457,6 +526,7 @@ class playScreen(screenBase):
             self.guide_button.changeColor(mouse_pos)
             self.pause_button.changeColor(mouse_pos)
             self.end_turn.changeColor(mouse_pos)
+            self.pass_turn.changeColor(mouse_pos)
             for btn in self.draw_sub_buttons:
                 btn.changeColor(mouse_pos)
         # self.player3_button.changeColor(mouse_pos)
@@ -521,9 +591,11 @@ class playScreen(screenBase):
 
         self.discard_button.update(self.screen)
         self.playForMe_button.update(self.screen)
+        self.pause_button.update(self.screen)
         self.guide_button.update(self.screen)
         self.pause_button.update(self.screen)
         self.end_turn.update(self.screen)
+        self.pass_turn.update(self.screen)
         for btn in self.draw_sub_buttons:
             btn.update(self.screen)
         # self.player3_button.update(self.screen)
@@ -532,6 +604,10 @@ class playScreen(screenBase):
             self.resume_button.update(self.screen)
             self.restart_button.update(self.screen)
             self.backMenu_button.update(self.screen)
+
+        if self.showing_guide:
+            self.draw_guide()
+            return
 
 
 class OptionSelectScreen(screenBase):
@@ -550,9 +626,13 @@ class OptionSelectScreen(screenBase):
         self.title_players = textObject(480, 390, "Players", font_path, 35, 'Black', 'topleft')
 
         greenButton_surf = pygame.image.load("ui/buttonImages/greenButton.png").convert_alpha()
-        blueButton_surf = pygame.image.load("ui/buttonImages/blueButton.png").convert_alpha()
+        greenButton_surf_selected = pygame.image.load("ui/buttonImages/selectedGreen.png").convert_alpha()
+        blueButton_surf = pygame.image.load("ui/buttonImages/mediumBlue.png").convert_alpha()
+        blueButton_surf_selected = pygame.image.load("ui/buttonImages/selectedBlue.png").convert_alpha()
         redButton_surf = pygame.image.load("ui/buttonImages/redButton.png").convert_alpha()
+        redButton_surf_selected = pygame.image.load("ui/buttonImages/selectedRed.png").convert_alpha()
         yellowButton_surf = pygame.image.load("ui/buttonImages/yellowButton.png").convert_alpha()
+        yellowButton_surf_selected = pygame.image.load("ui/buttonImages/selectedYellow.png").convert_alpha()
         orangeButton_surf = pygame.image.load("ui/buttonImages/orangeButton.png").convert_alpha()
         orangeButton_surf = pygame.transform.scale(orangeButton_surf, (100, 30))
 
@@ -563,30 +643,45 @@ class OptionSelectScreen(screenBase):
         self.medium_button = Button(blueButton_surf, 630, 310, "Medium", button_font, on_click=self.set_difficult_medium)
         self.difficult_button = Button(redButton_surf, 740, 310, "Difficult", button_font, on_click=self.set_difficult_hard)
 
-        self.player1_button = Button(yellowButton_surf, 520, 500, "1 player", button_font, on_click=self.set_1_players)
-        self.player2_button = Button(yellowButton_surf, 630, 500, "2 players", button_font, on_click=self.set_2_players)
-        self.player3_button = Button(yellowButton_surf, 740, 500, "3 players", button_font, on_click=self.set_3_players)
+        self.player2_button = Button(yellowButton_surf, 520, 500, "2 players", button_font, on_click=self.set_2_players)
+        self.player3_button = Button(yellowButton_surf, 650, 500, "3 players", button_font, on_click=self.set_3_players)
+
+        self.easy_button.selected_image = greenButton_surf_selected
+        self.medium_button.selected_image = blueButton_surf_selected
+        self.difficult_button.selected_image = redButton_surf_selected
+        self.player2_button.selected_image = yellowButton_surf_selected
+        self.player3_button.selected_image = yellowButton_surf_selected
+
+        self.difficulty_buttons = [self.easy_button, self.medium_button, self.difficult_button]
+
+        self.player_buttons = [self.player2_button, self.player3_button]
 
     def navigate_to_menu_screen(self):
         return menuScreen(self.screen, self.game_state)
 
+    def select_only(self, selected_button, group):
+        for btn in group:
+            btn.is_selected = (btn is selected_button)
+
     def set_difficult_easy(self):
         self.game_state.set_player_difficulty(PlayerType.COMPUTER_EASY)
+        self.select_only(self.easy_button, self.difficulty_buttons)
 
     def set_difficult_medium(self):
         self.game_state.set_player_difficulty(PlayerType.COMPUTER_MEDIUM)
+        self.select_only(self.medium_button, self.difficulty_buttons)
 
     def set_difficult_hard(self):
         self.game_state.set_player_difficulty(PlayerType.COMPUTER_HARD)
-
-    def set_1_players(self):
-        self.game_state.set_players(1)
+        self.select_only(self.difficult_button, self.difficulty_buttons)
 
     def set_2_players(self):
         self.game_state.set_players(2)
+        self.select_only(self.player2_button, self.player_buttons)
 
     def set_3_players(self):
         self.game_state.set_players(3)
+        self.select_only(self.player3_button, self.player_buttons)
 
     def process_event(self, event):
         global current_screen
@@ -632,3 +727,105 @@ class OptionSelectScreen(screenBase):
         self.player1_button.update(self.screen)
         self.player2_button.update(self.screen)
         self.player3_button.update(self.screen)
+
+class EndScreen(screenBase):
+    def __init__(self, screen, game_state: GameState):
+        super().__init__(screen)
+        self.game_state = game_state
+        font_path = "ui/Font/Minecraftia-Regular.ttf"
+        self.WinResult = textObject(640, 220, "YOU WIN!", font_path, 150, 'Black', 'center')
+        self.LoseResult = textObject(640, 220, "YOU LOSE!", font_path, 150, 'Black', 'center')
+
+        self.win_colors = [(255,65,65),(87,255,115),(171, 87, 255),(87,245,255)]
+        self.win_color_index = 0
+        self.win_animation_font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 150)
+
+        self.background_surf = pygame.image.load("ui/images/Vector.png").convert_alpha()
+
+        button_surf = pygame.image.load("ui/buttonImages/duckyellowbutton.png").convert_alpha()
+        button_surf = pygame.transform.scale(button_surf, (200, 50))
+
+        center_x, center_y = 640, 360
+        button_font = pygame.font.Font(font_path, 20)
+        self.restart_button = Button(button_surf, center_x-150, center_y + 150, "Restart", button_font, self.navigate_to_restart)
+        self.backMenu_button = Button(button_surf, center_x+150, center_y +150, "Menu", button_font, self.navigate_to_menu)
+
+        self.win_flash_timer = pygame.USEREVENT + 10
+        pygame.time.set_timer(self.win_flash_timer, 200)
+
+    def navigate_to_restart(self):
+        new_deck = Deck()
+        new_players = deque()
+
+        new_state = GameState(new_players, new_deck)
+        return playScreen(self.screen, new_state)
+
+    def navigate_to_menu(self):
+        return menuScreen(self.screen, self.game_state)
+
+    def update_objects(self):
+        mouse_pos = pygame.mouse.get_pos()
+        self.restart_button.changeColor(mouse_pos)
+        self.backMenu_button.changeColor(mouse_pos)
+
+    def process_event(self, event):
+        global current_screen
+
+        if event.type == self.win_flash_timer:
+            self.win_color_index = (self.win_color_index + 1) % len(self.win_colors)
+            self.WinResult.color = self.win_colors[self.win_color_index]
+            self.WinResult.render()
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            for button in [self.restart_button, self.backMenu_button]:
+                screen = button.handle_event(event)
+                if screen is not None:
+                    current_screen = screen
+                    self.close = True
+                    return
+
+    def draw_objects(self):
+        self.screen.fill((212, 212, 212))
+        self.screen.blit(self.background_surf, (0, 0))
+
+        self.restart_button.update(self.screen)
+        self.backMenu_button.update(self.screen)
+
+        if self.game_state.state == State.WON:
+            self.WinResult.draw(self.screen)
+        elif self.game_state.state == State.LOST:
+            self.LoseResult.draw(self.screen)
+
+
+#/guide
+    def load_guide_text(self):
+        with open("ui/guide_text/nottyGuide.txt", "r", encoding="utf-8") as f:
+            return f.read().splitlines()
+
+    def open_guide(self):
+        self.showing_guide = True
+        self.guide_scroll = 0
+
+    def close_guide(self):
+        self.showing_guide = False
+
+    def draw_guide(self):
+        self.screen.blit(self.overlay, (0, 0))
+        panel_x, panel_y = 200, 80
+        paper = pygame.image.load("ui/images/guidePaper.png").convert_alpha()
+        self.screen.blit(paper, (panel_x, panel_y))
+        font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 20)
+        text_x = panel_x + 40
+        text_y = panel_y + 40 + self.guide_scroll
+
+        for line in self.guide_text:
+            surf = font.render(line, True, (0, 0, 0))
+            self.screen.blit(surf, (text_x, text_y))
+            text_y += 28
+
+        close_x = panel_x + paper.get_width() - 60
+        close_y = panel_y + 20
+
+        self.closeGuide_button = Button(pygame.image.load("ui/buttonImages/closeButton.png").convert_alpha(),close_x,close_y,"",self.button_font,self.close_guide)
+        self.closeGuide_button.update(self.screen)
+    #/guide
