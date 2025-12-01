@@ -317,6 +317,7 @@ class MEDIUM(playerDecision):
     def discard_card_from_hand(self) -> int:
         current_hand=self.game_state.current_player.hand
         weights=self.get_decisionWeights(current_hand)
+        duplicate_cards_valuation_factor = 3
         duplicate_cards = [card for card, weight_value in weights.items() if weight_value[2] > 1]
         
         temp = []
@@ -327,7 +328,7 @@ class MEDIUM(playerDecision):
                 duplicity = weights[each_card][2]
                 temp.append((sum_PG_weights, duplicity, index))
 
-        duplicates= [c for c in temp if (c[1]>1 and c[0]<=3)]
+        duplicates= [c for c in temp if (c[1]>1 and c[0]<=duplicate_cards_valuation_factor)]
         
         if duplicates:
             return min(duplicates, key=lambda x: x[0])[2]
