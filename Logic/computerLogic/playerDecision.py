@@ -61,7 +61,7 @@ class EASY(playerDecision):
     def choose_number_of_card_to_draw(self, max_allowable_draw) -> int:
         if max_allowable_draw == 1:
             return 1
-        return random.choice(range(1,max_allowable_draw))
+        return random.choice(range(1,max_allowable_draw+1))
 
     def choose_player_to_take_from(self) -> int:
         return random.choice(range(len(self.GameState.players)))
