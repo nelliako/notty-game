@@ -104,7 +104,7 @@ class MEDIUM(playerDecision):
         potential_number_groups: List[List[Card]] =[]
 
         for number in number_cards:
-            if len(number_cards[number])>=2:
+            if len(number_cards[number])<=2:
                 potential_number_groups.append(number_cards[number])
         return potential_number_groups
     
@@ -135,12 +135,12 @@ class MEDIUM(playerDecision):
                     current_run.append(numbers[i])
                 else:
                     # Run ended, save if potential (2+)
-                    if len(current_run) >= 2:
+                    if len(current_run) <= 2:
                         runs.append(current_run[:])
                     current_run = [numbers[i]]
             
             # Check last run
-            if len(current_run) >= 2:
+            if len(current_run) <= 2:
                 runs.append(current_run)
             
             # Add all potential runs for this color
@@ -256,6 +256,8 @@ class MEDIUM(playerDecision):
                                 best_idx = i
                     if best_idx >=0:
                         probabilities[each_target_card] = (best_prob,best_idx)
+                #print('probabilities')
+                #print(probabilities)
                 if probabilities:
                     best_card, (prob, pile_index) = max(probabilities.items(),key=lambda kv:kv[1][0])
                     pile_counts = {}
@@ -291,7 +293,7 @@ class MEDIUM(playerDecision):
                     if best_deck_prob_drawN > best_player_prob_value and PlayerMove.DRAW in self.available_moves:
                         move = PlayerMove.DRAW
                         N_options= [n for n,p in draw_options if p>=best_player_prob_value]
-                        self.draw_N_value = min(candidates) if N_options else 1
+                        self.draw_N_value = min(N_options) if N_options else 1
                     elif best_player_prob_value>best_deck_prob_drawN and PlayerMove.TAKE in self.available_moves:
                         move = PlayerMove.TAKE
                         self.target_player_index = best_player_index
@@ -300,7 +302,8 @@ class MEDIUM(playerDecision):
                         #TODO : create another probability function that basically finds the probability of disrrupting a valid_group/close_to_valid in next_player hand or prev player hand
                         #TODO : disrupt by take one if probability is higher than others?
                 else:
-                    move = PlayerMove.PASS
+                    move = PlayerMove.END_TURN
+                    #keeps
         self.prev_move = move
         return move
     

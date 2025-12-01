@@ -41,7 +41,7 @@ def game_loop():
     game_state.deck.shuffle_deck()
 
     for i in range(number_of_players):
-        game_state.players.append(Player(player_id=uuid.uuid4(), hand=[], player_type=PlayerType.COMPUTER_EASY, name=f"Player {i}"))
+        game_state.players.append(Player(player_id=uuid.uuid4(), hand=[], player_type=PlayerType.COMPUTER_MEDIUM, name=f"Player {i}"))
 
     # deal 4 cards to each player
     for player in game_state.players:
@@ -74,7 +74,7 @@ def game_loop():
             print(f"you chose move: {chosen_move}")
             move = moves[chosen_move]
         else:
-            move = player_moves_map[game_state.current_player.type].choose()
+            move = player_moves_map[game_state.current_player.type].choose() #calling to playerDecision
             print(f"{game_state.current_player.name} chose move: {move}")
 
         while True:
