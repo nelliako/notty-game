@@ -85,7 +85,8 @@ class MEDIUM(playerDecision):
         super().__init__(game_state)
         self.game_state = game_state
         self.available_moves = valid_moves
-        self.discardCandidates=[]
+        self.draw_N_value=1
+        self.target_player_index=0
     
     def get_discard_group(self):
         valid_group= contains_valid_group(self.game_state.current_player.hand)
@@ -139,7 +140,7 @@ class MEDIUM(playerDecision):
             for i in range(len(keys)):
                 if (keys[i] + 1) in keys:
                     consecutive_numbers += 1
-            if consecutive_numbers <= 2:
+            if consecutive_numbers >= 1:
                 potential_color_groups.append( [colors_cards[color][number] for number in colors_cards[color]])
 
         return potential_color_groups
@@ -219,27 +220,6 @@ class MEDIUM(playerDecision):
     def update_discardCandidates(self,listOfCard):
         self.discardCandidates= self.discardCandidates + listOfCard
         self.discardCandidates=list(set(list(self.discardCandidates))) #filters and removes more than 1 instance in discardable pile
-
-    def get_probability_of_target_cards(self,target_cards):
-        if self.game_state.number_players==3:
-            target_piles = [self.game_state.players[0].hand,self.game_state.players[1].hand, self.game_state.deck.cards]
-        else:
-            target_piles = [self.game_state.players[0].hand, self.game_state.deck.cards]
-        probabilities: Dict[Card, tuple[float,int]] = {} # Card -> (best_probability, pile_index)
-        for each_target_card in target_cards: #goes through each want to have card for the current existing hand
-            best_prob =0.0
-            best_idx = -1
-            for i,pile in enumerate(target_piles):
-                pile_count = len(pile)
-                if each_target_card in pile:
-                    instance= sum([ (each_target_card==each_card in pile) for each_card in pile])
-                    probability_value = instance/ len(pile) 
-                    if probability_value> best_prob:
-                        best_prob= probability_value
-                        best_idx = i
-            if best_idx >=0:
-                probabilities[each_target_card] = (best_prob,best_idx)
-        return probabilities
 
     #TODO: Core logic for player 'MEDIUM'
     def choose(self):
@@ -351,7 +331,7 @@ class MEDIUM(playerDecision):
         if duplicates:
             return min(duplicates, key=lambda x: x[0])[2]
         else:
-            return min(temp, key=lambda x: x[0])[2]
+            return min(temp, key=lambda x: x[0])[2] if temp else 0
 
 
     # as per gamelogic, choose_player_to_take_from is only \\
