@@ -74,7 +74,7 @@ def game_loop():
             print(f"you chose move: {chosen_move}")
             move = moves[chosen_move]
         else:
-            move, _ = player_moves_map[game_state.current_player.type].choose()
+            move = player_moves_map[game_state.current_player.type].choose()
             print(f"{game_state.current_player.name} chose move: {move}")
 
         while True:
@@ -117,7 +117,7 @@ def game_loop():
                 handle_action_swap(game_state, computer_player_decision)
 
             if move == PlayerMove.DISCARD_VALID_CARDS:
-                handle_action_discard_group(game_state.current_player, game_state.deck)
+                handle_action_discard_group(game_state, game_state.deck)
 
             if move == PlayerMove.DRAW or move == PlayerMove.TAKE or move == PlayerMove.DRAW_ONE:
                 moves.remove(move)
@@ -129,7 +129,7 @@ def game_loop():
                 print(f"you chose move: {chosen_move}")
                 move = moves[chosen_move]
             else:
-                move, _ = player_moves_map[game_state.current_player.type].choose()
+                move = player_moves_map[game_state.current_player.type].choose()
                 print(f"{game_state.current_player.name} chose move: {move}")
                 if move == PlayerMove.PASS or move == PlayerMove.END_TURN:
                     break

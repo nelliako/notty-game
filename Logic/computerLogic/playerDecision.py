@@ -87,16 +87,9 @@ class MEDIUM(playerDecision):
         self.available_moves = valid_moves
         self.discardCandidates=[]
     
-    # updates the list of available moves for the current player
-    def updateAvailableMoves(self,chosenMove):
-        #removes moves 1,2,3 only as they are only allowed once
-        if chosenMove!=PlayerMove.DISCARD:
-            self.available_moves.remove(self.temp)
-        return self.available_moves
     def get_discard_group(self):
         valid_group= contains_valid_group(self.game_state.current_player.hand)
         return valid_group
-    
 
     def numbers_potential(self,cards: List[Card]) -> list[list[Card]] | None:
         number_cards: Dict[int, List[Card]] = {}
@@ -188,7 +181,7 @@ class MEDIUM(playerDecision):
         return target_cards
     
     #checks for duplicate cards in hand as that is the most ideal candidate for dumping
-    def get_duplicity(target: Card, hand: list[Card]) -> int:
+    def get_duplicity(self,target: Card, hand: list[Card]) -> int:
         if target is None or not hand:
             return 0
         count= sum(1 for c in hand if c.color == target.color and c.number == target.number)
@@ -222,7 +215,6 @@ class MEDIUM(playerDecision):
     def update_discardCandidates(self,listOfCard):
         self.discardCandidates= self.discardCandidates + listOfCard
         self.discardCandidates=list(set(list(self.discardCandidates))) #filters and removes more than 1 instance in discardable pile
-
 
     def get_probability_of_target_cards(self,target_cards):
         if self.game_state.number_players==3:
@@ -309,7 +301,7 @@ class MEDIUM(playerDecision):
                     best_deck_draw_n, best_deck_prob_drawN = max (draw_options, key=lambda x: (x[1],-x[0]))
                 else:
                     best_deck_draw_n, best_deck_prob_drawN = (-1, 0.0)
-
+                #decide move based on target card concentration in each pile
                 if best_deck_prob_drawN > best_player_prob_value and PlayerMove.DRAW in self.available_moves:
                     move = PlayerMove.DRAW
                     self.draw_N_value = min(n for n,p in draw_options if p>=best_player_prob_value)
@@ -317,19 +309,21 @@ class MEDIUM(playerDecision):
                 elif best_player_prob_value>best_deck_prob_drawN and PlayerMove.TAKE in self.available_moves:
                     move = PlayerMove.TAKE
                     self.target_player_index = best_player_index
-
-                # Decide move based on pile_index:
-                if pile_index == len(target_piles) - 1 and PlayerMove.DRAW in self.available_moves: #if pile index deck
-                    move = PlayerMove.DRAW
-                    self.probabilities=probabilities
-                elif PlayerMove.TAKE in self.available_moves:
-                    move = PlayerMove.TAKE
-                    # store pile_index for choose_player_to_take_from()
-                    self.target_player_index = pile_index
-                elif PlayerMove.DRAW_ONE in self.available_moves:
-                    move= PlayerMove.DRAW_ONE
                 else:
-                    move = PlayerMove.END_TURN #last_possible_move
+                    # Decide move based on which ever pile has highest probability:
+                    if pile_index == len(target_piles) - 1 and PlayerMove.DRAW in self.available_moves: #if pile index deck
+                        move = PlayerMove.DRAW
+                        self.draw_N_value = max_draw
+                    elif PlayerMove.TAKE in self.available_moves:
+                        move = PlayerMove.TAKE
+                        # store pile_index for choose_player_to_take_from()
+                        self.target_player_index = pile_index
+                    elif PlayerMove.DRAW_ONE in self.available_moves:
+                        move= PlayerMove.DRAW_ONE
+                    else:
+                        move = PlayerMove.END_TURN #last_possible_move
+                    #TODO : create another probability function that basically finds the probability of disrrupting a valid_group/close_to_valid in next_player hand or prev player hand
+                    #TODO : disrupt by take one if probability is higher than others?
         self.prev_move = move
         return move
     
@@ -339,47 +333,42 @@ class MEDIUM(playerDecision):
         current_hand=self.game_state.current_player.hand
         weights=self.get_decisionWeights(current_hand)
         duplicate_cards = [card for card, weight_value in weights.items() if weight_value[2] > 1]
-        discardCandidates=list(set(list(duplicate_cards))) #filters and removes more than 1 instance in discardABLE pile
-        chosenDiscardCard=random.choice(discardCandidates)
-        #TODO: if chosenDiscardCard in HV_groups and weight==3 or more, choose least weighed card
-        return chosenDiscardCard
-    
+        
+        temp = []
+        #unpacking the weights dict for ease of use
+        for index, each_card in enumerate(current_hand):
+            if each_card in weights:
+                sum_PG_weights = weights[each_card][0] +weights[each_card][1]
+                duplicity = weights[each_card][2]
+                temp.append((sum_PG_weights, duplicity, index))
+
+        duplicates= [c for c in temp if (c[1]>1 and c[0]<=3)]
+        
+        if duplicates:
+            return min(duplicates, key=lambda x: x[0])[2]
+        else:
+            return min(temp, key=lambda x: x[0])[2]
+
+
     # as per gamelogic, choose_player_to_take_from is only \\
     # called when previous move was PlayerMove.TAKE
     def choose_player_to_take_from(self) -> int:
         return self.target_player_index
 
     def choose_number_of_card_to_draw(self, max_allowable_draw) -> int:
-        if max_allowable_draw == 1:
-            return 1
+        if max_allowable_draw<self.draw_N_value:
+            return max_allowable_draw
         else:
-         return random.choice(range(1,max_allowable_draw))
+            return self.draw_N_value
+    def choose_card_to_take(self, chosen_player: Player) -> int:
+        return random.choice(range(len(chosen_player.hand)))
         
-
-
-    #returns single chosen move and calls updateAvailableMoves
-    def get_move(self):
-        move=self.choose()
-        self.available_moves=self.updateAvailableMoves(move)
-        return move
-
+#NOT YET IMPLEMENTED
 class HARD(playerDecision):
     def __init__(self, game_state: GameState, valid_moves):
         super().__init__(game_state)
         self.game_state = game_state
         self.available_moves = valid_moves
-    
-    # updates the list of available moves for the current player
-    def updateAvailableMoves(self,chosenMove):
-        #removes moves 1,2,3 only as they are only allowed once
-        if chosenMove!=PlayerMove.DISCARD:
-            self.available_moves.remove(self.temp)
-        return self.available_moves
-    
-    
-
-
-
 
     #TODO: Core logic for player 'HARD'
     def choose(self):
@@ -396,11 +385,6 @@ class HARD(playerDecision):
 
 
 
-
-
-
-        
-         
     #List of Player Moves for reference
             #PlayerMove.DRAW,
             #PlayerMove.TAKE,
