@@ -259,7 +259,7 @@ class MEDIUM(playerDecision):
                 #print('probabilities')
                 #print(probabilities)
                 if probabilities:
-                    best_card, (prob, pile_index) = max(probabilities.items(),key=lambda kv:kv[1][0])
+                    best_card, (prob, pile_index) = max(probabilities.items(),key=lambda x:x[1][0])
                     pile_counts = {}
                     for card, (prob,index) in probabilities.items():  # Iterate through all target cards and their pile locations
                         pile_counts[index] = pile_counts.get(index,0)+1
@@ -267,7 +267,7 @@ class MEDIUM(playerDecision):
 
                     deck_index = len(target_piles) - 1
                     deck_size = len(self.game_state.deck.cards)
-                    deck_target_card_count = len(target_piles[deck_index])
+                    deck_target_card_count = pile_counts.get(deck_index,0)
 
                     hand_space = 20-len(current_hand)
                     draw_options = []
@@ -277,8 +277,9 @@ class MEDIUM(playerDecision):
                         draw_options.append((n_draw,prob_draw_n))
                     
                     player_options = []
-                    for index in range(deck_index): # going through 0,1 or 0
+                    for index in range(deck_index): # going through 0,1 or 0 only
                         hand_size = len(target_piles[index])
+                        if hand_size == 0: return PlayerMove.END_TURN
                         prob_value_of_index = pile_counts.get(index,0) / hand_size
                         player_options.append((index,prob_value_of_index))
                     if player_options:
@@ -303,7 +304,6 @@ class MEDIUM(playerDecision):
                         #TODO : disrupt by take one if probability is higher than others?
                 else:
                     move = PlayerMove.END_TURN
-                    #keeps
         self.prev_move = move
         return move
     

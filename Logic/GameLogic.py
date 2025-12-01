@@ -54,10 +54,10 @@ def game_loop():
 
         # set the current player to the first player and remove current player from the players list
         game_state.current_player = game_state.players.popleft()
-
+        print('------------------------------------------------')#Optional Output Print for ease of read : remove for final
         print(f"It's {game_state.current_player.name} turn. It's now turn {turn}.")
         moves = get_permissible_moves(game_state)
-
+        print('------------------------------------------------')#Optional Output Print for ease of read : remove for final
         player_moves_map = {
             PlayerType.COMPUTER_EASY: EASY(game_state, moves),
             PlayerType.COMPUTER_MEDIUM: MEDIUM(game_state, moves),
