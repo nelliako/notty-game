@@ -245,7 +245,7 @@ class MEDIUM(playerDecision):
                     # TO DO : generate probability of receiving target_cards using card weights from deck | opp1 | opp2
 
                 move = PlayerMove.END_TURN #last_possible_move
-
+#added a test comment
         #remaining = DRAW_ONE, DRAW, TAKE
         self.prev_move = move
         return move
