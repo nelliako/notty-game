@@ -279,7 +279,8 @@ class MEDIUM(playerDecision):
                     player_options = []
                     for index in range(deck_index): # going through 0,1 or 0 only
                         hand_size = len(target_piles[index])
-                        if hand_size == 0: return PlayerMove.END_TURN
+                        if hand_size == 0: return PlayerMove.END_TURN #avoids making any other move when a hand has reached 0
+                        if hand_size == 1: continue  # Skip players with only 1 card
                         prob_value_of_index = pile_counts.get(index,0) / hand_size
                         player_options.append((index,prob_value_of_index))
                     if player_options:
