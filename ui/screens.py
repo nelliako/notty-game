@@ -221,7 +221,7 @@ class playScreen(screenBase):
         self.permissible_moves = get_permissible_moves(self.game_state)
         self.done_moves = []
         self.draw_sub_buttons = []
-        self.available_cards = []
+        self.available_cards_for_steal_or_trade = []
         self.is_stealing = False
         self.is_trading = False
 
