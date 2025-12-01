@@ -204,7 +204,7 @@ class MEDIUM(playerDecision):
     def get_decisionWeights(self,hand):
         color_potential_groups,number_potential_groups = self.get_potential_groups(hand)
         weights: Dict[Card, List[int]] = {}
-        non_membership_penalty_factor = 0.8 # arbitrary adjust for performance
+        non_membership_penalty_factor = 0.3 # arbitrary adjust for performance
         for each_card in hand:
             card_color_weight=0
             card_number_weight=0
@@ -213,12 +213,12 @@ class MEDIUM(playerDecision):
                 if each_card in each_group:
                     card_color_weight+=1 #adds 1 for every color group the card is a member of
                 else:
-                    card_color_weight*=non_membership_penalty_factor 
+                    card_color_weight-=non_membership_penalty_factor 
             for each_group in number_potential_groups:
                 if each_card in each_group:
                     card_number_weight+=1 #adds 1 for every color group the card is a member of
                 else:
-                    card_number_weight*=non_membership_penalty_factor
+                    card_number_weight-=non_membership_penalty_factor
             duplicity = self.get_duplicity(each_card,hand)
             weights[each_card] =[card_color_weight,card_number_weight,duplicity]
         return weights
@@ -234,7 +234,7 @@ class MEDIUM(playerDecision):
                 move = PlayerMove.DRAW_ONE
         else:
             weights=self.get_decisionWeights(current_hand)
-            duplicate_cards =any([weight_value[2] > 1 for card, weight_value in weights.items()]) ### need to test whether it works
+            duplicate_cards = any(w[2] > 1 for w in weights.values())
             if duplicate_cards and PlayerMove.DRAW_ONE in self.available_moves:
                 move= PlayerMove.DRAW_ONE
             else:
@@ -256,7 +256,7 @@ class MEDIUM(playerDecision):
                                 best_idx = i
                     if best_idx >=0:
                         probabilities[each_target_card] = (best_prob,best_idx)
-                if not probabilities:
+                if probabilities:
                     best_card, (prob, pile_index) = max(probabilities.items(),key=lambda kv:kv[1][0])
                     pile_counts = {}
                     for card, (prob,index) in probabilities.items():  # Iterate through all target cards and their pile locations
@@ -290,8 +290,8 @@ class MEDIUM(playerDecision):
                     #decide move based on target card concentration in each pile
                     if best_deck_prob_drawN > best_player_prob_value and PlayerMove.DRAW in self.available_moves:
                         move = PlayerMove.DRAW
-                        self.draw_N_value = min(n for n,p in draw_options if p>=best_player_prob_value)
-
+                        N_options= [n for n,p in draw_options if p>=best_player_prob_value]
+                        self.draw_N_value = min(candidates) if N_options else 1
                     elif best_player_prob_value>best_deck_prob_drawN and PlayerMove.TAKE in self.available_moves:
                         move = PlayerMove.TAKE
                         self.target_player_index = best_player_index
