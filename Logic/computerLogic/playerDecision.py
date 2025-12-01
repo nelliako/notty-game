@@ -175,9 +175,13 @@ class MEDIUM(playerDecision):
         color_potential_groups,number_potential_groups = self.get_potential_groups(hand)
         target_cards=[]
         for each_group in color_potential_groups:
-            target_cards=target_cards+self.get_missing_cards('color',each_group)
+            missing_cards=self.get_missing_cards('color',each_group)
+            if missing_cards:
+                target_cards=target_cards+missing_cards
         for each_group in number_potential_groups:
-            target_cards=target_cards+self.get_missing_cards('number',each_group)
+            missing_cards=self.get_missing_cards('number',each_group)
+            if missing_cards:
+                target_cards=target_cards+missing_cards
         return target_cards
     
     #checks for duplicate cards in hand as that is the most ideal candidate for dumping
