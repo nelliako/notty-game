@@ -8,7 +8,7 @@ import random
 from typing import List, Dict
 from Logic.Classes import GameState, Player, PlayerMove, Card, CardColor
 from Logic.ValidateCardLogic import *
-
+from collections import Counter
 # Base Class for computer_player_decision Players 'EASY', 'MEDIUM' & 'HARD'
 class playerDecision:
     def __init__(self, game_state: GameState):
@@ -85,7 +85,6 @@ class MEDIUM(playerDecision):
         super().__init__(game_state)
         self.game_state = game_state
         self.available_moves = valid_moves
-        self.drawedOne = False
         self.discardCandidates=[]
     
     # updates the list of available moves for the current player
@@ -223,44 +222,141 @@ class MEDIUM(playerDecision):
     def update_discardCandidates(self,listOfCard):
         self.discardCandidates= self.discardCandidates + listOfCard
         self.discardCandidates=list(set(list(self.discardCandidates))) #filters and removes more than 1 instance in discardable pile
+
+
+    def get_probability_of_target_cards(self,target_cards):
+        if self.game_state.number_players==3:
+            target_piles = [self.game_state.players[0].hand,self.game_state.players[1].hand, self.game_state.deck.cards]
+        else:
+            target_piles = [self.game_state.players[0].hand, self.game_state.deck.cards]
+        probabilities: Dict[Card, tuple[float,int]] = {} # Card -> (best_probability, pile_index)
+        for each_target_card in target_cards: #goes through each want to have card for the current existing hand
+            best_prob =0.0
+            best_idx = -1
+            for i,pile in enumerate(target_piles):
+                pile_count = len(pile)
+                if each_target_card in pile:
+                    instance= sum([ (each_target_card==each_card in pile) for each_card in pile])
+                    probability_value = instance/ len(pile) 
+                    if probability_value> best_prob:
+                        best_prob= probability_value
+                        best_idx = i
+            if best_idx >=0:
+                probabilities[each_target_card] = (best_prob,best_idx)
+        return probabilities
+
     #TODO: Core logic for player 'MEDIUM'
     def choose(self):
-        
         current_hand = self.game_state.current_player.hand
         valid_group = self.get_discard_group()
-
         if valid_group!=None:
             move= PlayerMove.DISCARD_VALID_CARDS
-        elif len(current_hand)>=17: #17 is arbitrary, can alter to check performance; \\
+        elif len(current_hand)>=17 and PlayerMove.DRAW_ONE in self.available_moves: #17 is arbitrary, can alter to check performance; \\
             # basically prioritises draw 1 and discard 1 when hand volume higher than 17 # TODO: maybe prioritise passing here?
-            move = PlayerMove.DRAW_ONE
+                move = PlayerMove.DRAW_ONE
         else:
             weights=self.get_decisionWeights(current_hand)
-            duplicate_cards =any([weight_value[2] > 1] for card, weight_value in weights.items())
-            if duplicate_cards:
+            duplicate_cards =any([weight_value[2] > 1 for card, weight_value in weights.items()]) ### need to test whether it works
+            if duplicate_cards and PlayerMove.DRAW_ONE in self.available_moves:
                 move= PlayerMove.DRAW_ONE
             else:
-                for card,weight_value in weights.items():
-                    pass
-                    # TO DO : generate probability of receiving target_cards using card weights from deck | opp1 | opp2
+                if self.game_state.number_players==3:
+                    target_piles = [self.game_state.players[0].hand,self.game_state.players[1].hand, self.game_state.deck.cards]
+                else:
+                    target_piles = [self.game_state.players[0].hand, self.game_state.deck.cards]
+                probabilities: Dict[Card, tuple[float,int]] = {} # Card -> (best_probability, pile_index)
+                for each_target_card in set(self.get_target_cards(current_hand)): #goes through each want to have card for the current existing hand
+                    best_prob =0.0
+                    best_idx = -1
+                    for i,pile in enumerate(target_piles):
+                        pile_count = len(pile)
+                        if each_target_card in pile:
+                            instance= sum([ 1 for each_card in pile if each_card==each_target_card])
+                            probability_value = instance/ len(pile) 
+                            if probability_value> best_prob:
+                                best_prob= probability_value
+                                best_idx = i
+                    if best_idx >=0:
+                        probabilities[each_target_card] = (best_prob,best_idx)
 
-                move = PlayerMove.END_TURN #last_possible_move
-#added a test comment
-        #remaining = DRAW_ONE, DRAW, TAKE
+                best_card, (prob, pile_index) = max(probabilities.items(),key=lambda kv:kv[1][0])
+                pile_counts = {}
+                for card, (prob,index) in probabilities.items():  # Iterate through all target cards and their pile locations
+                    pile_counts[index] = pile_counts.get(index,0)+1
+
+
+                deck_index = len(target_piles) - 1
+                deck_size = len(self.game_state.deck.cards)
+                deck_target_card_count = len(target_piles[deck_index])
+
+                hand_space = 20-len(current_hand)
+                draw_options = []
+                max_draw = min(3,hand_space)
+                for n_draw in range(1, max_draw+1):
+                    prob_draw_n = 1 - (((deck_size-deck_target_card_count)/deck_size)**n_draw) #probability of getting a target card from n draws from deck
+                    draw_options.append((n_draw,prob_draw_n))
+                
+                player_options = []
+                for index in range(deck_index): # going through 0,1 or 0
+                    hand_size = len(target_piles[index])
+                    prob_value_of_index = pile_counts.get(index,0) / hand_size
+                    player_options.append((index,prob_value_of_index))
+                if player_options:
+                    best_player_index, best_player_prob_value = max (player_options, key=lambda x: x[1])
+                else:
+                    best_player_index, best_player_prob_value = (-1,0.0)
+                if draw_options:
+                    best_deck_draw_n, best_deck_prob_drawN = max (draw_options, key=lambda x: (x[1],-x[0]))
+                else:
+                    best_deck_draw_n, best_deck_prob_drawN = (-1, 0.0)
+
+                if best_deck_prob_drawN > best_player_prob_value and PlayerMove.DRAW in self.available_moves:
+                    move = PlayerMove.DRAW
+                    self.draw_N_value = min(n for n,p in draw_options if p>=best_player_prob_value)
+
+                elif best_player_prob_value>best_deck_prob_drawN and PlayerMove.TAKE in self.available_moves:
+                    move = PlayerMove.TAKE
+                    self.target_player_index = best_player_index
+
+                # Decide move based on pile_index:
+                if pile_index == len(target_piles) - 1 and PlayerMove.DRAW in self.available_moves: #if pile index deck
+                    move = PlayerMove.DRAW
+                    self.probabilities=probabilities
+                elif PlayerMove.TAKE in self.available_moves:
+                    move = PlayerMove.TAKE
+                    # store pile_index for choose_player_to_take_from()
+                    self.target_player_index = pile_index
+                elif PlayerMove.DRAW_ONE in self.available_moves:
+                    move= PlayerMove.DRAW_ONE
+                else:
+                    move = PlayerMove.END_TURN #last_possible_move
         self.prev_move = move
         return move
     
     # as per gamelogic, discard_card_from_hand is only \\
-    # called when previous move was PlayerMove.DRAW_ONE
+    # called when previous move is PlayerMove.DRAW_ONE
     def discard_card_from_hand(self) -> int:
         current_hand=self.game_state.current_player.hand
         weights=self.get_decisionWeights(current_hand)
         duplicate_cards = [card for card, weight_value in weights.items() if weight_value[2] > 1]
         discardCandidates=list(set(list(duplicate_cards))) #filters and removes more than 1 instance in discardABLE pile
-        chosenDiscardCard=random.choice(self.discardCandidates)
+        chosenDiscardCard=random.choice(discardCandidates)
         #TODO: if chosenDiscardCard in HV_groups and weight==3 or more, choose least weighed card
         return chosenDiscardCard
     
+    # as per gamelogic, choose_player_to_take_from is only \\
+    # called when previous move was PlayerMove.TAKE
+    def choose_player_to_take_from(self) -> int:
+        return self.target_player_index
+
+    def choose_number_of_card_to_draw(self, max_allowable_draw) -> int:
+        if max_allowable_draw == 1:
+            return 1
+        else:
+         return random.choice(range(1,max_allowable_draw))
+        
+
+
     #returns single chosen move and calls updateAvailableMoves
     def get_move(self):
         move=self.choose()
