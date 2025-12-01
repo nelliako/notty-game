@@ -8,7 +8,7 @@ import random
 from typing import List, Dict
 from Logic.Classes import GameState, Player, PlayerMove, Card, CardColor
 from Logic.ValidateCardLogic import *
-from collections import Counter
+
 # Base Class for computer_player_decision Players 'EASY', 'MEDIUM' & 'HARD'
 class playerDecision:
     def __init__(self, game_state: GameState):
@@ -104,43 +104,49 @@ class MEDIUM(playerDecision):
         potential_number_groups: List[List[Card]] =[]
 
         for number in number_cards:
-            potential_number_groups.append(number_cards[number])
+            if len(number_cards[number])>=2:
+                potential_number_groups.append(number_cards[number])
         return potential_number_groups
     
     def colors_potential(self, cards: List[Card]) -> list[list[Card]] | None:
-        
-        # number of cards per color
-        colors = {}
         # stores card for each color & number
         colors_cards: Dict[CardColor, Dict[int, Card]] = {}
 
         for card in set(cards):
             color = card.color
             number = card.number
-
             if color not in colors_cards:
-                colors[color] = 1
                 colors_cards[color] = {}
-            else:
-                colors[color] = colors[color] + 1
-
-            if not colors_cards[color].get(number, False):
-                colors_cards[color][number] = card
-            else:
-                colors_cards[color][number] = card
-
-                #edit alter
-        potential_color_groups:List[List[Card]] =[]
+            colors_cards[color][number] = card
+        
+        potential_color_groups: List[List[Card]] = []
 
         for color in colors_cards:
-            keys = sorted(list(colors_cards[color].keys()))
-            consecutive_numbers = 0
-            for i in range(len(keys)):
-                if (keys[i] + 1) in keys:
-                    consecutive_numbers += 1
-            if consecutive_numbers >= 1:
-                potential_color_groups.append( [colors_cards[color][number] for number in colors_cards[color]])
-
+            numbers = sorted(colors_cards[color].keys())
+            if len(numbers) < 2:  # Need at least 2 cards for a potential run
+                continue
+            
+            # Find consecutive runs of length >= 2
+            runs = []
+            current_run = [numbers[0]]
+            
+            for i in range(1, len(numbers)):
+                if numbers[i] == current_run[-1] + 1:
+                    current_run.append(numbers[i])
+                else:
+                    # Run ended, save if potential (2+)
+                    if len(current_run) >= 2:
+                        runs.append(current_run[:])
+                    current_run = [numbers[i]]
+            
+            # Check last run
+            if len(current_run) >= 2:
+                runs.append(current_run)
+            
+            # Add all potential runs for this color
+            for run in runs:
+                potential_color_groups.append([colors_cards[color][n] for n in run])
+        
         return potential_color_groups
     
     def get_missing_cards(self, type_of_group: str, a_potential_group: List[Card]) -> List[Card] | None:
@@ -211,7 +217,7 @@ class MEDIUM(playerDecision):
             for each_group in number_potential_groups:
                 if each_card in each_group:
                     card_number_weight+=1 #adds 1 for every color group the card is a member of
-                #else:
+                else:
                     card_number_weight*=non_membership_penalty_factor
             duplicity = self.get_duplicity(each_card,hand)
             weights[each_card] =[card_color_weight,card_number_weight,duplicity]
@@ -250,60 +256,51 @@ class MEDIUM(playerDecision):
                                 best_idx = i
                     if best_idx >=0:
                         probabilities[each_target_card] = (best_prob,best_idx)
+                if not probabilities:
+                    best_card, (prob, pile_index) = max(probabilities.items(),key=lambda kv:kv[1][0])
+                    pile_counts = {}
+                    for card, (prob,index) in probabilities.items():  # Iterate through all target cards and their pile locations
+                        pile_counts[index] = pile_counts.get(index,0)+1
 
-                best_card, (prob, pile_index) = max(probabilities.items(),key=lambda kv:kv[1][0])
-                pile_counts = {}
-                for card, (prob,index) in probabilities.items():  # Iterate through all target cards and their pile locations
-                    pile_counts[index] = pile_counts.get(index,0)+1
 
+                    deck_index = len(target_piles) - 1
+                    deck_size = len(self.game_state.deck.cards)
+                    deck_target_card_count = len(target_piles[deck_index])
 
-                deck_index = len(target_piles) - 1
-                deck_size = len(self.game_state.deck.cards)
-                deck_target_card_count = len(target_piles[deck_index])
-
-                hand_space = 20-len(current_hand)
-                draw_options = []
-                max_draw = min(3,hand_space)
-                for n_draw in range(1, max_draw+1):
-                    prob_draw_n = 1 - (((deck_size-deck_target_card_count)/deck_size)**n_draw) #probability of getting a target card from n draws from deck
-                    draw_options.append((n_draw,prob_draw_n))
-                
-                player_options = []
-                for index in range(deck_index): # going through 0,1 or 0
-                    hand_size = len(target_piles[index])
-                    prob_value_of_index = pile_counts.get(index,0) / hand_size
-                    player_options.append((index,prob_value_of_index))
-                if player_options:
-                    best_player_index, best_player_prob_value = max (player_options, key=lambda x: x[1])
-                else:
-                    best_player_index, best_player_prob_value = (-1,0.0)
-                if draw_options:
-                    best_deck_draw_n, best_deck_prob_drawN = max (draw_options, key=lambda x: (x[1],-x[0]))
-                else:
-                    best_deck_draw_n, best_deck_prob_drawN = (-1, 0.0)
-                #decide move based on target card concentration in each pile
-                if best_deck_prob_drawN > best_player_prob_value and PlayerMove.DRAW in self.available_moves:
-                    move = PlayerMove.DRAW
-                    self.draw_N_value = min(n for n,p in draw_options if p>=best_player_prob_value)
-
-                elif best_player_prob_value>best_deck_prob_drawN and PlayerMove.TAKE in self.available_moves:
-                    move = PlayerMove.TAKE
-                    self.target_player_index = best_player_index
-                else:
-                    # Decide move based on which ever pile has highest probability:
-                    if pile_index == len(target_piles) - 1 and PlayerMove.DRAW in self.available_moves: #if pile index deck
+                    hand_space = 20-len(current_hand)
+                    draw_options = []
+                    max_draw = min(3,hand_space)
+                    for n_draw in range(1, max_draw+1):
+                        prob_draw_n = 1 - (((deck_size-deck_target_card_count)/deck_size)**n_draw) #probability of getting a target card from n draws from deck
+                        draw_options.append((n_draw,prob_draw_n))
+                    
+                    player_options = []
+                    for index in range(deck_index): # going through 0,1 or 0
+                        hand_size = len(target_piles[index])
+                        prob_value_of_index = pile_counts.get(index,0) / hand_size
+                        player_options.append((index,prob_value_of_index))
+                    if player_options:
+                        best_player_index, best_player_prob_value = max (player_options, key=lambda x: x[1])
+                    else:
+                        best_player_index, best_player_prob_value = (-1,0.0)
+                    if draw_options:
+                        best_deck_draw_n, best_deck_prob_drawN = max (draw_options, key=lambda x: (x[1],-x[0]))
+                    else:
+                        best_deck_draw_n, best_deck_prob_drawN = (-1, 0.0)
+                    #decide move based on target card concentration in each pile
+                    if best_deck_prob_drawN > best_player_prob_value and PlayerMove.DRAW in self.available_moves:
                         move = PlayerMove.DRAW
-                        self.draw_N_value = max_draw
-                    elif PlayerMove.TAKE in self.available_moves:
+                        self.draw_N_value = min(n for n,p in draw_options if p>=best_player_prob_value)
+
+                    elif best_player_prob_value>best_deck_prob_drawN and PlayerMove.TAKE in self.available_moves:
                         move = PlayerMove.TAKE
-                        # store pile_index for choose_player_to_take_from()
-                        self.target_player_index = pile_index
-                    elif PlayerMove.DRAW_ONE in self.available_moves:
-                        move= PlayerMove.DRAW_ONE
+                        self.target_player_index = best_player_index
                     else:
                         move = PlayerMove.END_TURN #last_possible_move
-                    #TODO : create another probability function that basically finds the probability of disrrupting a valid_group/close_to_valid in next_player hand or prev player hand
-                    #TODO : disrupt by take one if probability is higher than others?
+                        #TODO : create another probability function that basically finds the probability of disrrupting a valid_group/close_to_valid in next_player hand or prev player hand
+                        #TODO : disrupt by take one if probability is higher than others?
+                else:
+                    move = PlayerMove.PASS
         self.prev_move = move
         return move
     
