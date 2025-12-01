@@ -216,9 +216,6 @@ class MEDIUM(playerDecision):
             duplicity = self.get_duplicity(each_card,hand)
             weights[each_card] =[card_color_weight,card_number_weight,duplicity]
         return weights
-    def update_discardCandidates(self,listOfCard):
-        self.discardCandidates= self.discardCandidates + listOfCard
-        self.discardCandidates=list(set(list(self.discardCandidates))) #filters and removes more than 1 instance in discardable pile
 
     #TODO: Core logic for player 'MEDIUM'
     def choose(self):
