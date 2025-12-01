@@ -117,7 +117,7 @@ def game_loop():
                 handle_action_swap(game_state, computer_player_decision)
 
             if move == PlayerMove.DISCARD_VALID_CARDS:
-                handle_action_discard_group(game_state, game_state.deck)
+                handle_action_discard_group(game_state, computer_player_decision)
 
             if move == PlayerMove.DRAW or move == PlayerMove.TAKE or move == PlayerMove.DRAW_ONE:
                 moves.remove(move)
