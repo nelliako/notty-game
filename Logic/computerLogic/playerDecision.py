@@ -200,6 +200,7 @@ class MEDIUM(playerDecision):
     def get_decisionWeights(self,hand):
         color_potential_groups,number_potential_groups = self.get_potential_groups(hand)
         weights: Dict[Card, List[int]] = {}
+        non_membership_penalty_factor = 0.8 # arbitrary adjust for performance
         for each_card in hand:
             card_color_weight=0
             card_number_weight=0
@@ -208,12 +209,12 @@ class MEDIUM(playerDecision):
                 if each_card in each_group:
                     card_color_weight+=1 #adds 1 for every color group the card is a member of
                 else:
-                    card_color_weight-=1 #subtracts 1 for every color group  the card is not a member of
+                    card_color_weight*=non_membership_penalty_factor 
             for each_group in number_potential_groups:
                 if each_card in each_group:
                     card_number_weight+=1 #adds 1 for every color group the card is a member of
-                else:
-                    card_number_weight-=1 #subtracts 1 for every color group  the card is not a member of
+                #else:
+                    card_number_weight*=non_membership_penalty_factor
             duplicity = self.get_duplicity(each_card,hand)
             weights[each_card] =[card_color_weight,card_number_weight,duplicity]
         return weights
