@@ -19,8 +19,6 @@ class playerDecision:
     #delegates to subclasses
     def get_move(self):
         pass
-    def updateAvailableMoves(self,chosenMove):
-        pass
 
     def choose(self):
         pass
