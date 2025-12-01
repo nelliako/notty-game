@@ -14,6 +14,7 @@ def see_screens():
     pygame.display.set_caption("Notty Game")
 
     game_state = GameState(players=deque(), deck=Deck())
+    game_state.set_players(2)
 
     screens.current_screen = screens.menuScreen(screen, game_state)
 

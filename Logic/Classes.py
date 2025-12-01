@@ -87,7 +87,8 @@ def create_deck():
     yellow_cards: List[Card] = [Card(CardColor.YELLOW, number) for number in range(1, 10)]
 
     all_cards = red_cards + green_cards + blue_cards + black_cards + yellow_cards
-    all_cards = all_cards + all_cards
+    # Duplicate the deck with NEW Card instances (previously reused same objects)
+    all_cards = all_cards + [Card(c.color, c.number) for c in all_cards]
     print(f"Initial Deck Size: {len(all_cards)}")
     random.shuffle(all_cards)
     return Deque(all_cards)
@@ -206,7 +207,7 @@ class GameState:
         self.chosen_player: Player = None
         self.deck = deck
         self.state = State.CONTINUE
-        self.number_players = 3
+        self.number_players = 1
         self.computer_difficulty = PlayerType.COMPUTER_EASY
         self.computer_playing_for_human = False
 
@@ -224,4 +225,5 @@ class GameState:
         self.chosen_player = None
         self.players = deque()
         self.deck = Deck()
+        self.number_players = 2
 
