@@ -156,7 +156,7 @@ class playScreen(screenBase):
         self.stateArrow_surf = pygame.image.load("ui/images/arrow.png").convert_alpha()
 
         orangeButton_surf = pygame.image.load("ui/buttonImages/orangeButton.png").convert_alpha()
-        orangeButton_surf = pygame.transform.scale(orangeButton_surf, (100, 30))
+        orangeButton_surf = pygame.transform.scale(orangeButton_surf, (100, 50))
         roundOrange_surf = pygame.image.load("ui/buttonImages/roundOrange.png").convert_alpha()
         actionButton_surf = pygame.image.load("ui/buttonImages/duckyellowbutton.png").convert_alpha()
         actionButton_surf = pygame.transform.scale(actionButton_surf, (100, 50))
@@ -178,28 +178,12 @@ class playScreen(screenBase):
         self.choose_start_player()
         self.reset_state()
 
-        # self.draw_button = Button(orangeButton_surf, 475, 340, "Draw", button_font, self.show_draw_options)
-        # self.steal_button = Button(orangeButton_surf, 585, 340, "Steal", button_font, self.activate_stealing)
-        # self.trade_button = Button(orangeButton_surf, 695, 340, "Trade", button_font, self.activate_trading)
-        # self.discard_button = Button(orangeButton_surf, 805, 340, "Discard", button_font, self.handle_discard)
-        # self.end_turn = Button(orangeButton_surf, 915, 340, "End Turn", button_font, self.trigger_end_turn)
-        #
-        # self.playForMe_button = Button(orangeButton_surf, 980, 40, "Play for me", button_font, self.play_for_me_button)
-        # self.guide_button = Button(orangeButton_surf, 1090, 40, "Guide", button_font, None)
-        # self.pause_button = Button(orangeButton_surf, 1200, 40, "Pause", button_font, self.pause_game)
-        #
-        # self.resume_button = Button(orangeButton_surf, center_x, center_y - 80, "Resume", button_font, self.resume_game)
-        # self.restart_button = Button(orangeButton_surf, center_x, center_y, "Restart", button_font, self.restart_game)
-        # self.backMenu_button = Button(orangeButton_surf, center_x, center_y + 80, "Menu", button_font, self.navigate_to_menu_screen)
-        # self.overlay = pygame.Surface((1280, 720), pygame.SRCALPHA)
-        # self.overlay.fill((0, 0, 0, 200))
 
         self.draw_button = Button(actionButton_surf, 460, 340, "Draw", button_font, self.show_draw_options)
         self.steal_button = Button(actionButton_surf, 580, 340, "Steal", button_font, self.activate_stealing)
         self.trade_button = Button(actionButton_surf, 700, 340, "Trade", button_font, self.activate_trading)
         self.discard_button = Button(actionButton_surf, 820, 340, "Discard", button_font, self.handle_discard)
-        self.end_turn = Button(blue_surf, 1070, 660, "End Turn", button_font, self.trigger_end_turn)
-        self.pass_turn = Button(actionButton_surf, 1190, 660, "Pass", button_font, self.trigger_end_turn)
+        self.end_turn = Button(blue_surf, 1210, 670, "End Turn", button_font, self.trigger_end_turn)
 
         self.guide_button = Button(guide_surf, 1025, 40, "Guide", button_font, self.open_guide)
         self.playForMe_button = Button(playForMe_surf, 1145, 40, "", button_font, self.play_for_me_button)
@@ -365,8 +349,8 @@ class playScreen(screenBase):
 
     def create_choice_buttons(self, max_draw):
         spacing = 35
-        base_x = 440
-        base_y = 340 - spacing # Place above the draw button
+        base_x = 425
+        base_y = 325 - spacing # Place above the draw button
         for i in range(1, max_draw + 1):
             x_pos = base_x + (i - 1) * spacing
             callback_action = lambda n=i: self.execute_draw(n)
@@ -609,7 +593,6 @@ class playScreen(screenBase):
             self.guide_button.changeColor(mouse_pos)
             self.pause_button.changeColor(mouse_pos)
             self.end_turn.changeColor(mouse_pos)
-            self.pass_turn.changeColor(mouse_pos)
             for btn in self.draw_sub_buttons:
                 btn.changeColor(mouse_pos)
         # self.player3_button.changeColor(mouse_pos)
@@ -621,10 +604,6 @@ class playScreen(screenBase):
         self.screen.blit(self.playerMe_surf, (600, 420))
         self.screen.blit(self.player2_surf, (600, 200))
         self.screen.blit(self.player3_surf, (300, 305))
-        # self.select_frame.draw(self.screen)
-        # self.title_options.draw(self.screen)
-        # self.title_players.draw(self.screen)
-        # self.title_level.draw(self.screen)
 
         # Calculating all available moves
         self.permissible_moves = get_permissible_moves(self.game_state)
@@ -682,7 +661,6 @@ class playScreen(screenBase):
         self.guide_button.update(self.screen)
         self.pause_button.update(self.screen)
         self.end_turn.update(self.screen)
-        self.pass_turn.update(self.screen)
         for btn in self.draw_sub_buttons:
             btn.update(self.screen)
         # self.player3_button.update(self.screen)
