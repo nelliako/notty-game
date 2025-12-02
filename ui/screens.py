@@ -701,17 +701,17 @@ class playScreen(screenBase):
         self.screen.blit(self.background_surf, (0, 0))
         # player 0
         if self.game_state.current_player.name == "Player 0":
-            self.screen.blit(self.stateArrow_surf, (620, 420))
-        self.screen.blit(self.playerMe_surf, (600, 450))
+            self.screen.blit(self.stateArrow_surf, (620, 450))
+        self.screen.blit(self.playerMe_surf, (600, 480))
         #player 2
         if self.game_state.current_player.name == "Player 1":
             self.screen.blit(self.stateArrow_surf, (620, 170))
         self.screen.blit(self.player2_surf, (600, 200))
         # Showing 3rd avatar only if there are 3 players
         if self.game_state.number_players == 3:
-            self.screen.blit(self.player3_surf, (300, 305))
+            self.screen.blit(self.player3_surf, (230, 305))
         if self.game_state.current_player.name == "Player 2":
-            self.screen.blit(self.stateArrow_surf, (320, 275))
+            self.screen.blit(self.stateArrow_surf, (250, 275))
 
         self.deck.draw_deck(self.screen)
         self.deck.update_and_draw_animations(self.screen)
