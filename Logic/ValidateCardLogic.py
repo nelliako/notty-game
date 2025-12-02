@@ -13,6 +13,7 @@ def colours_identical(cards: List[Card]) -> list[Card] | None:
     colors = {}
     # stores card for each color & number
     colors_cards: Dict[CardColor, Dict[int, Card]] = {}
+    cards_to_discard = []
 
     for card in set(cards):
         color = card.color
@@ -36,14 +37,23 @@ def colours_identical(cards: List[Card]) -> list[Card] | None:
         keys = sorted(list(colors_cards[color].keys()))
         # print(keys)
 
-        consecutive_numbers = 0
         for i in range(len(keys)):
-            if (keys[i] + 1) in keys:
-                consecutive_numbers += 1
+            consecutive_numbers = 0
+            if i+3 > len(keys):
+                break
+            subset = keys[i:i+3]
+            for j in range(1,3):
+                print(subset[j]- subset[j-1])
 
-        # print(consecutive_numbers)
-        if consecutive_numbers >= 2:
-            return [colors_cards[color][number] for number in colors_cards[color]]
+                if (subset[j]- subset[j-1]) == 1:
+                    consecutive_numbers += 1
+
+                # print(consecutive_numbers)
+            if consecutive_numbers >= 2:
+                cards_to_discard.append(subset)
+
+    if len(cards_to_discard) > 0:
+        return cards_to_discard[0]
 
     return None
 
