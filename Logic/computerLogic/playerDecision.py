@@ -90,7 +90,7 @@ class MEDIUM(playerDecision):
         valid_group= contains_valid_group(self.game_state.current_player.hand)
         return valid_group
 
-    def numbers_potential(self,cards: List[Card]) -> list[list[Card]] | None:
+    def numbers_potential(self,cards: List[Card],potential_group_length) -> list[list[Card]] | None:
         number_cards: Dict[int, List[Card]] = {}
 
         for card in set(cards):
@@ -104,11 +104,11 @@ class MEDIUM(playerDecision):
         potential_number_groups: List[List[Card]] =[]
 
         for number in number_cards:
-            if len(number_cards[number])<=2:
+            if len(number_cards[number])<=potential_group_length:
                 potential_number_groups.append(number_cards[number])
         return potential_number_groups
     
-    def colors_potential(self, cards: List[Card]) -> list[list[Card]] | None:
+    def colors_potential(self, cards: List[Card],potential_group_length) -> list[list[Card]] | None:
         # stores card for each color & number
         colors_cards: Dict[CardColor, Dict[int, Card]] = {}
 
@@ -123,7 +123,7 @@ class MEDIUM(playerDecision):
 
         for color in colors_cards:
             numbers = sorted(colors_cards[color].keys())
-            if len(numbers) < 2:  # Need at least 2 cards for a potential run
+            if len(numbers) < potential_group_length:  # Need at least 2 cards for a potential run
                 continue
             
             # Find consecutive runs of length >= 2
@@ -135,12 +135,12 @@ class MEDIUM(playerDecision):
                     current_run.append(numbers[i])
                 else:
                     # Run ended, save if potential (2+)
-                    if len(current_run) <= 2:
+                    if len(current_run) <= potential_group_length:
                         runs.append(current_run[:])
                     current_run = [numbers[i]]
             
             # Check last run
-            if len(current_run) <= 2:
+            if len(current_run) <= potential_group_length:
                 runs.append(current_run)
             
             # Add all potential runs for this color
@@ -149,6 +149,12 @@ class MEDIUM(playerDecision):
         
         return potential_color_groups
     
+    def get_potential_groups(self,defined_hand):
+        potential_group_length=1
+        color_potential_groups = self.colors_potential(defined_hand,potential_group_length)
+        number_potential_groups = self.numbers_potential(defined_hand,potential_group_length)
+        return [color_potential_groups,number_potential_groups]
+
     def get_missing_cards(self, type_of_group: str, a_potential_group: List[Card]) -> List[Card] | None:
         if type_of_group=='color':
             if not a_potential_group:
@@ -196,11 +202,6 @@ class MEDIUM(playerDecision):
         count= sum(1 for c in hand if c.color == target.color and c.number == target.number)
         return count
     
-    def get_potential_groups(self,defined_hand):
-        color_potential_groups = self.colors_potential(defined_hand)
-        number_potential_groups = self.numbers_potential(defined_hand)
-        return [color_potential_groups,number_potential_groups]
-
     def get_decisionWeights(self,hand):
         color_potential_groups,number_potential_groups = self.get_potential_groups(hand)
         weights: Dict[Card, List[int]] = {}
@@ -313,9 +314,8 @@ class MEDIUM(playerDecision):
     def discard_card_from_hand(self) -> int:
         current_hand=self.game_state.current_player.hand
         weights=self.get_decisionWeights(current_hand)
-        duplicate_cards_valuation_factor = 3
+        duplicate_cards_valuation_factor = 2
         duplicate_cards = [card for card, weight_value in weights.items() if weight_value[2] > 1]
-        
         temp = []
         #unpacking the weights dict for ease of use
         for index, each_card in enumerate(current_hand):
