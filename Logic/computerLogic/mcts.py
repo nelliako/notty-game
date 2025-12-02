@@ -22,7 +22,8 @@ class MonteCarlo:
     def __init__(self):
         pass
     
-    def update(self,hash_game_state)
+    def update(self,hash_game_state):
+        pass
 
 
 
