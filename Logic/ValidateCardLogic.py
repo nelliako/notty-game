@@ -1,5 +1,7 @@
 from typing import List, Dict
 
+from pygame import key
+
 from Logic.Classes import Card, CardColor
 
 #TODO: FIX NEEDED
@@ -50,7 +52,11 @@ def colours_identical(cards: List[Card]) -> list[Card] | None:
 
                 # print(consecutive_numbers)
             if consecutive_numbers >= 2:
-                cards_to_discard.append(subset)
+                cards_sublist = []
+                for number in subset:
+                    cards_sublist.append(colors_cards[color][number])
+
+                cards_to_discard.append(cards_sublist)
 
     if len(cards_to_discard) > 0:
         return cards_to_discard[0]
