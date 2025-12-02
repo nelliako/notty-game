@@ -150,9 +150,9 @@ class MEDIUM(playerDecision):
         return potential_color_groups
     
     def get_potential_groups(self,defined_hand):
-        potential_group_length=1
-        color_potential_groups = self.colors_potential(defined_hand,potential_group_length)
-        number_potential_groups = self.numbers_potential(defined_hand,potential_group_length)
+        potential_group_length=2
+        color_potential_groups = self.colors_potential(defined_hand,potential_group_length) # valid length is 3
+        number_potential_groups = self.numbers_potential(defined_hand,potential_group_length+1) #plus 1 because valid group is length 4
         return [color_potential_groups,number_potential_groups]
 
     def get_missing_cards(self, type_of_group: str, a_potential_group: List[Card]) -> List[Card] | None:
