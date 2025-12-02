@@ -466,7 +466,7 @@ class playScreen(screenBase):
 
         if self.game_state.current_player.type != PlayerType.HUMAN:
             computer_player_decision = get_computer_player_decision(game_state=self.game_state, moves=self.permissible_moves)
-            move, _ = computer_player_decision.choose()
+            move = computer_player_decision.choose()
             print(f"{self.game_state.current_player.name} chose move: {move}")
 
             # Getting rid of the chosen buttons when computer player is playing (if it's not a discard button)
@@ -496,7 +496,9 @@ class playScreen(screenBase):
 
         if not all_hands_non_empty(self.game_state):
             # TODO replace with a function & return winning player
-            for player in self.game_state.players:
+            for player in [self.game_state.current_player] + list(self.game_state.players):
+                if player is None:
+                    continue
                 if len(player.hand) == 0:
                     print(f'The winner is {player.name}')
                     if player.type == PlayerType.HUMAN:
@@ -529,9 +531,9 @@ class playScreen(screenBase):
         # Trading
         if event.type == pygame.MOUSEBUTTONDOWN and self.is_trading:
             mouse_x, mouse_y = event.pos
-            for card_vis, player, card in reversed(self.available_cards_for_steal_or_trade): # needs to be changed
+            for i, (card_vis, player, card) in enumerate(reversed(self.available_cards_for_steal_or_trade)): # needs to be changed
                 if card_vis.contains_point(mouse_x, mouse_y):
-                    handle_action_swap(self.game_state, None, None, lambda: player.hand.index(card), skip_drawing=True)
+                    handle_action_swap(self.game_state, None, None, lambda n=i: len(self.game_state.current_player.hand) - 1 - n, skip_drawing=True)
                     self.is_trading = False
                     self.done_moves.append(PlayerMove.DRAW_ONE)
                     return
@@ -562,7 +564,7 @@ class playScreen(screenBase):
                             self.close = True
                             return
                         if computer_player_decision is not None and self.game_state.computer_playing_for_human:
-                            move, _ = computer_player_decision.choose()
+                            move = computer_player_decision.choose()
                             print(f"On behalf of {self.game_state.current_player.name}, the computer chose move: {move}")
 
                             # Getting rid of the chosen buttons when computer player is playing (if it's not a discard button)
@@ -632,16 +634,17 @@ class playScreen(screenBase):
                     # allow selecting one card per hand per click
 
         if not all_hands_non_empty(self.game_state):
-            if not all_hands_non_empty(self.game_state):
-                for player in self.game_state.players:
-                    if len(player.hand) == 0:
-                        print(f'The winner is {player.name}')
-                        if player.type == PlayerType.HUMAN:
-                            self.game_state.state = State.WON
-                        else:
-                            self.game_state.state = State.LOST
-                        # is_endgame = True
-                        break
+            for player in [self.game_state.current_player] + list(self.game_state.players):
+                if player is None:
+                    continue
+                if len(player.hand) == 0:
+                    print(f'The winner is {player.name}')
+                    if player.type == PlayerType.HUMAN:
+                        self.game_state.state = State.WON
+                    else:
+                        self.game_state.state = State.LOST
+                    # is_endgame = True
+                    break
 
             self.game_state.reset_state()
             current_screen = EndScreen(self.screen, self.game_state)
@@ -675,12 +678,12 @@ class playScreen(screenBase):
     def draw_objects(self):
         self.screen.fill((212, 212, 212))
         self.screen.blit(self.background_surf, (0, 0))
-        self.screen.blit(self.stateArrow_surf, (650, 585))
-        self.screen.blit(self.playerMe_surf, (640, 610))
-        self.screen.blit(self.player2_surf, (640, 90))
+        self.screen.blit(self.stateArrow_surf, (620, 390))
+        self.screen.blit(self.playerMe_surf, (600, 420))
+        self.screen.blit(self.player2_surf, (600, 200))
         # Showing 3rd avatar only if there are 3 players
         if self.game_state.number_players == 3:
-            self.screen.blit(self.player3_surf, (80, 305))
+            self.screen.blit(self.player3_surf, (300, 305))
 
         self.deck.draw_deck(self.screen)
         self.deck.update_and_draw_animations(self.screen)
@@ -694,10 +697,6 @@ class playScreen(screenBase):
         for hand in self.ui_hands:
             hand.cards = []
 
-        hand_bottom = PlayerHand(640, 450, -18, "horizontal")
-        hand_top    = PlayerHand(640, 160, -18, "horizontal")
-        hand_left   = PlayerHand(200, 320, -18, "vertical")
-        hand_positions = [hand_bottom, hand_top, hand_left]
         self.available_cards_for_steal_or_trade = []
         # Drawing all cards of all players
         mx, my = pygame.mouse.get_pos()
@@ -718,8 +717,7 @@ class playScreen(screenBase):
                         self.available_cards_for_steal_or_trade.append((card_vis, player, card))
 
                     # If we are in the trading mode
-                    elif self.is_trading and player.player_id == self.game_state.current_player.player_id:
-                        card_vis.hovered = True
+                    if self.is_trading and player.player_id == self.game_state.current_player.player_id:
                         self.available_cards_for_steal_or_trade.append((card_vis, player, card))
                     # Apply persistent selected state
                     selected_state = self.card_states.get(card.id, False)
@@ -788,7 +786,6 @@ class playScreen(screenBase):
         if not self.is_trading:
             self.end_turn.update(self.screen)
 
-        self.end_turn.update(self.screen)
         for btn in self.draw_sub_buttons:
             btn.update(self.screen)
         # self.player3_button.update(self.screen)
