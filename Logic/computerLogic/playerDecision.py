@@ -245,7 +245,7 @@ class MEDIUM(playerDecision):
                 probabilities: Dict[Card, tuple[float,int]] = {} # Card -> (best_probability, pile_index)
                 for each_target_card in set(self.get_target_cards(current_hand)): #goes through each want to have card for the current existing hand
                     best_prob =0.0
-                    best_idx = -1
+                    best_index = -1
                     for i,pile in enumerate(target_piles):
                         pile_count = len(pile)
                         if each_target_card in pile:
@@ -253,9 +253,9 @@ class MEDIUM(playerDecision):
                             probability_value = instance/ len(pile) 
                             if probability_value> best_prob:
                                 best_prob= probability_value
-                                best_idx = i
-                    if best_idx >=0:
-                        probabilities[each_target_card] = (best_prob,best_idx)
+                                best_index = i
+                    if best_index >=0:
+                        probabilities[each_target_card] = (best_prob,best_index)
                 #print('probabilities')
                 #print(probabilities)
                 if probabilities:
@@ -354,7 +354,7 @@ class HARD(playerDecision):
 
     #TODO: Core logic for player 'HARD'
     def choose(self):
-        pass
+        mcts.get
 
     #returns single chosen move and calls updateAvailableMoves
     def get_move(self):
