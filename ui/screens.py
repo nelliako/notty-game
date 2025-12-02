@@ -466,7 +466,7 @@ class playScreen(screenBase):
 
         if self.game_state.current_player.type != PlayerType.HUMAN:
             computer_player_decision = get_computer_player_decision(game_state=self.game_state, moves=self.permissible_moves)
-            move, _ = computer_player_decision.choose()
+            move = computer_player_decision.choose()
             print(f"{self.game_state.current_player.name} chose move: {move}")
 
             # Getting rid of the chosen buttons when computer player is playing (if it's not a discard button)
