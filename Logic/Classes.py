@@ -225,5 +225,5 @@ class GameState:
         self.chosen_player = None
         self.players = deque()
         self.deck = Deck()
-        self.number_players = 2
+
 

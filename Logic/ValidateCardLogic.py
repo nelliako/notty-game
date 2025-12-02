@@ -2,6 +2,11 @@ from typing import List, Dict
 
 from Logic.Classes import Card, CardColor
 
+#TODO: FIX NEEDED
+# 1. 4 cards should be returned instead of 3 for same number/different colour
+# 2. For example, if blue 1, blue 2, blue 8, blue 9 are present in the hand, they will be returned - bug with colours_identical function in consecutive numbers
+# 3. Blue 1, blue 2, blue 3, blue 4, blue 8 are discarded all together - bug here  "return [colors_cards[color][number] for number in colors_cards[color]]""
+
 
 def colours_identical(cards: List[Card]) -> list[Card] | None:
      # number of cards per color

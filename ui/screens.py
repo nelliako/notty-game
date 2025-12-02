@@ -152,7 +152,9 @@ class playScreen(screenBase):
         self.background_surf = pygame.image.load("ui/images/Vector.png").convert_alpha()
         self.playerMe_surf = pygame.image.load("ui/images/playerMe.png").convert_alpha()
         self.player2_surf = pygame.image.load("ui/images/player2.png").convert_alpha()
-        self.player3_surf = pygame.image.load("ui/images/player3.png").convert_alpha()
+        # Showing 3rd avatar only if there are 3 players
+        if self.game_state.number_players == 3:
+            self.player3_surf = pygame.image.load("ui/images/player3.png").convert_alpha()
         self.stateArrow_surf = pygame.image.load("ui/images/arrow.png").convert_alpha()
 
         orangeButton_surf = pygame.image.load("ui/buttonImages/orangeButton.png").convert_alpha()
@@ -328,6 +330,8 @@ class playScreen(screenBase):
     #/guide
 
     def handle_discard(self):
+        if self.is_trading:
+            return
         handle_action_discard_group(self.game_state, None)
 
     def activate_trading(self):
@@ -350,11 +354,13 @@ class playScreen(screenBase):
         self.is_stealing = True
     
     def trigger_end_turn(self):
-        self.done_moves = []
+        self.reset_state()
         self.game_state.players.append(self.game_state.current_player)
         self.game_state.current_player = self.game_state.players.popleft()
 
     def show_draw_options(self):
+        if self.is_trading:
+            return
         if self.draw_sub_buttons:
             self.draw_sub_buttons = []
             return
@@ -419,6 +425,8 @@ class playScreen(screenBase):
 
         total_cards = list(self.game_state.deck.cards)
         for player in [self.game_state.current_player] + list(self.game_state.players):
+            if player is None:
+                continue
             # print(f"{player.name}'s hand size: {len(player.hand)}!")
             if player.hand is not None:
                 total_cards += list(player.hand)
@@ -439,7 +447,7 @@ class playScreen(screenBase):
             raise ValueError("Cards in deck exceeds 90 cards!")
 
         # print(f"Game state Current Player {self.game_state.current_player.name} Hand Size: {len(self.game_state.current_player.hand)}")
-        if len(self.game_state.current_player.hand) > 20:
+        if len(self.game_state.current_player.hand) > 21 or (len(self.game_state.current_player.hand) == 21 and not self.is_trading):
             raise ValueError(f"{self.game_state.current_player.name}'s hand exceeds 20 cards!")
 
 
@@ -447,6 +455,10 @@ class playScreen(screenBase):
             computer_player_decision = get_computer_player_decision(game_state=self.game_state, moves=self.permissible_moves)
             move, _ = computer_player_decision.choose()
             print(f"{self.game_state.current_player.name} chose move: {move}")
+
+            # Getting rid of the chosen buttons when computer player is playing (if it's not a discard button)
+            if move in [PlayerMove.DRAW, PlayerMove.TAKE, PlayerMove.DRAW_ONE]:
+                self.done_moves.append(move)
 
             while True:
                 if move == PlayerMove.DRAW:
@@ -539,6 +551,10 @@ class playScreen(screenBase):
                         if computer_player_decision is not None and self.game_state.computer_playing_for_human:
                             move, _ = computer_player_decision.choose()
                             print(f"On behalf of {self.game_state.current_player.name}, the computer chose move: {move}")
+
+                            # Getting rid of the chosen buttons when computer player is playing (if it's not a discard button)
+                            if move in [PlayerMove.DRAW, PlayerMove.TAKE, PlayerMove.DRAW_ONE]:
+                                self.done_moves.append(move)
 
                             while True:
                                 if move == PlayerMove.DRAW:
@@ -647,12 +663,15 @@ class playScreen(screenBase):
         self.screen.blit(self.stateArrow_surf, (620, 390))
         self.screen.blit(self.playerMe_surf, (600, 420))
         self.screen.blit(self.player2_surf, (600, 200))
-        self.screen.blit(self.player3_surf, (300, 305))
+        # Showing 3rd avatar only if there are 3 players
+        if self.game_state.number_players == 3:
+            self.screen.blit(self.player3_surf, (300, 305))
 
         # Calculating all available moves
         self.permissible_moves = get_permissible_moves(self.game_state)
         for move in self.done_moves:
-            self.permissible_moves.remove(move)
+            if move in self.permissible_moves:
+                self.permissible_moves.remove(move)
         sprites = CardSprites("cardsImages")
         sprites = CardSprites("cardsImages")
         for hand in self.ui_hands:
@@ -722,12 +741,12 @@ class playScreen(screenBase):
         # Prompting the user to steal if it's stealing (relevant for human player)
         if self.is_stealing:
             text = self.button_font.render("SELECT A PLAYER TO STEAL A RANDOM CARD", True, (255, 0, 0))
-            self.screen.blit(text, (600, 300))
+            self.screen.blit(text, (475, 290))
 
         if self.is_trading:
             # There should be a card appearing on the screen drawn from the deck 
             text = self.button_font.render("DISCARD ANY CARD FROM YOUR HAND", True, (255, 0, 0))
-            self.screen.blit(text, (600, 300))
+            self.screen.blit(text, (475, 290))
 
         # Drawing buttons for permissible moves
         if PlayerMove.DRAW in self.permissible_moves:
@@ -743,7 +762,11 @@ class playScreen(screenBase):
         self.pause_button.update(self.screen)
         self.guide_button.update(self.screen)
         self.pause_button.update(self.screen)
-        self.end_turn.update(self.screen)
+
+        # To prevent cheating and bugs by ending the turn prematurely
+        if not self.is_trading:
+            self.end_turn.update(self.screen)
+
         for btn in self.draw_sub_buttons:
             btn.update(self.screen)
         # self.player3_button.update(self.screen)
@@ -900,11 +923,8 @@ class EndScreen(screenBase):
         pygame.time.set_timer(self.win_flash_timer, 200)
 
     def navigate_to_restart(self):
-        new_deck = Deck()
-        new_players = deque()
-
-        new_state = GameState(new_players, new_deck)
-        return playScreen(self.screen, new_state)
+        self.game_state.reset_state()
+        return playScreen(self.screen, self.game_state)
 
     def navigate_to_menu(self):
         return menuScreen(self.screen, self.game_state)
