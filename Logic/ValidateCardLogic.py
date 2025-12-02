@@ -2,12 +2,18 @@ from typing import List, Dict
 
 from Logic.Classes import Card, CardColor
 
+#TODO: FIX NEEDED
+# 1. 4 cards should be returned instead of 3 for same number/different colour
+# 2. For example, if blue 1, blue 2, blue 8, blue 9 are present in the hand, they will be returned - bug with colours_identical function in consecutive numbers
+# 3. Blue 1, blue 2, blue 3, blue 4, blue 8 are discarded all together - bug here  "return [colors_cards[color][number] for number in colors_cards[color]]""
+
 
 def colours_identical(cards: List[Card]) -> list[Card] | None:
      # number of cards per color
     colors = {}
     # stores card for each color & number
     colors_cards: Dict[CardColor, Dict[int, Card]] = {}
+    cards_to_discard = []
 
     for card in set(cards):
         color = card.color
@@ -31,14 +37,23 @@ def colours_identical(cards: List[Card]) -> list[Card] | None:
         keys = sorted(list(colors_cards[color].keys()))
         # print(keys)
 
-        consecutive_numbers = 0
         for i in range(len(keys)):
-            if (keys[i] + 1) in keys:
-                consecutive_numbers += 1
+            consecutive_numbers = 0
+            if i+3 > len(keys):
+                break
+            subset = keys[i:i+3]
+            for j in range(1,3):
+                print(subset[j]- subset[j-1])
 
-        # print(consecutive_numbers)
-        if consecutive_numbers >= 2:
-            return [colors_cards[color][number] for number in colors_cards[color]]
+                if (subset[j]- subset[j-1]) == 1:
+                    consecutive_numbers += 1
+
+                # print(consecutive_numbers)
+            if consecutive_numbers >= 2:
+                cards_to_discard.append(subset)
+
+    if len(cards_to_discard) > 0:
+        return cards_to_discard[0]
 
     return None
 

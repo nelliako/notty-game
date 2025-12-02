@@ -226,6 +226,7 @@ def get_permissible_moves(game_state: GameState) -> list[PlayerMove]:
     ]
 
     restricted_moves: List[PlayerMove] = [
+        PlayerMove.DRAW_ONE,
         # PlayerMove.DISCARD_CARD,
         PlayerMove.DISCARD_VALID_CARDS,
         PlayerMove.PASS,
@@ -233,6 +234,9 @@ def get_permissible_moves(game_state: GameState) -> list[PlayerMove]:
     ]
 
     moves: List[PlayerMove] = available_moves if len(game_state.current_player.hand) < 20 else restricted_moves
+    # Trading is available by the rules when there are exactly 20 cards
+    # if len(game_state.current_player.hand) == 20:
+    #     moves.append(PlayerMove.DRAW_ONE)
     return moves
 
 
