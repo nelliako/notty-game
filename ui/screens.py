@@ -198,11 +198,10 @@ class playScreen(screenBase):
         if self.game_state.number_players == 3:
             self.ui_hands.append(self.hand_left)
 
-
-        self.draw_button = Button(actionButton_surf, 460, 350, "Draw", button_font, self.show_draw_options)
-        self.steal_button = Button(actionButton_surf, 580, 350, "Steal", button_font, self.activate_stealing)
-        self.trade_button = Button(actionButton_surf, 700, 350, "Trade", button_font, self.activate_trading)
-        self.discard_button = Button(actionButton_surf, 820, 350, "Discard", button_font, self.handle_discard)
+        self.draw_button = Button(actionButton_surf, 460, 360, "Draw", button_font, self.show_draw_options)
+        self.steal_button = Button(actionButton_surf, 580, 360, "Steal", button_font, self.activate_stealing)
+        self.trade_button = Button(actionButton_surf, 700, 360, "Trade", button_font, self.activate_trading)
+        self.discard_button = Button(actionButton_surf, 820, 360, "Discard", button_font, self.handle_discard)
         self.end_turn = Button(blue_surf, 1210, 670, "End Turn", button_font, self.trigger_end_turn)
 
         self.guide_button = Button(guide_surf, 1025, 40, "Guide", button_font, self.open_guide)
@@ -692,17 +691,17 @@ class playScreen(screenBase):
         self.screen.blit(self.background_surf, (0, 0))
         # player 0
         if self.game_state.current_player.name == "Player 0":
-            self.screen.blit(self.stateArrow_surf, (620, 420))
-        self.screen.blit(self.playerMe_surf, (600, 450))
+            self.screen.blit(self.stateArrow_surf, (620, 450))
+        self.screen.blit(self.playerMe_surf, (600, 480))
         #player 2
         if self.game_state.current_player.name == "Player 1":
             self.screen.blit(self.stateArrow_surf, (620, 170))
         self.screen.blit(self.player2_surf, (600, 200))
         # Showing 3rd avatar only if there are 3 players
         if self.game_state.number_players == 3:
-            self.screen.blit(self.player3_surf, (300, 305))
+            self.screen.blit(self.player3_surf, (230, 305))
         if self.game_state.current_player.name == "Player 2":
-            self.screen.blit(self.stateArrow_surf, (320, 275))
+            self.screen.blit(self.stateArrow_surf, (250, 275))
 
         self.deck.draw_deck(self.screen)
         self.deck.update_and_draw_animations(self.screen)
