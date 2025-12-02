@@ -699,13 +699,12 @@ class playScreen(screenBase):
 
                     # If we are in the trading mode
                     elif self.is_trading and player.player_id == self.game_state.current_player.player_id:
-                        card_vis.hovered = True
                         self.available_cards_for_steal_or_trade.append((card_vis, player, card))
                     # Apply persistent selected state
                     selected_state = self.card_states.get(card.id, False)
                     card_vis.selected = selected_state
-                    # Regular hover (only when not in steal/trade modes)
-                    if not self.is_stealing and not self.is_trading:
+                    # Regular hover (only when not in steal mode)
+                    if not self.is_stealing:
                         if card_vis.contains_point(mx, my):
                             card_vis.hovered = True
                     hand = self.ui_hands[i]
@@ -715,7 +714,7 @@ class playScreen(screenBase):
                 mx, my = pygame.mouse.get_pos()
 
         # Overlap-aware hover regions (no redraw to avoid bringing to top)
-        if not self.is_stealing and not self.is_trading and self.last_hand_visuals:
+        if not self.is_stealing and self.last_hand_visuals:
             mx, my = pygame.mouse.get_pos()
             hand_groups = {}
             for card_vis, logic_card, player, hand, card_index in self.last_hand_visuals:
