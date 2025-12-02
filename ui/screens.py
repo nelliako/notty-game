@@ -143,6 +143,8 @@ class playScreen(screenBase):
     def __init__(self, screen, game_state):
         super().__init__(screen)
         self.game_state = game_state
+        # Setting the time to ensure the animation for hands dealing in the beginning works
+        self.start_time = pygame.time.get_ticks()
         self.is_paused = False
         center_x, center_y = 640, 360
 
@@ -181,22 +183,22 @@ class playScreen(screenBase):
         self.button_font = button_font
         self.smallButton_surf = pygame.transform.scale(roundOrange_surf, (30, 30))
 
-        # Preparing the "start state"
-        self.create_players() 
-        self.deal_hands()
-        self.choose_start_player()
-        self.reset_state()
-
         # FIXED UI POSITIONS FOR UP TO 3 PLAYERS
-        self.hand_bottom = PlayerHand(640, 580, -18, "horizontal")   # Player 0 - Bottom
-        self.hand_top    = PlayerHand(640, 50, -18, "horizontal")    # Player 1 - Top
-        self.hand_left   = PlayerHand(100, 360, -18, "vertical")     # Player 2 - Left
+        self.hand_bottom = PlayerHand(600, 580, -18, "horizontal")   # Player 0 - Bottom
+        self.hand_top    = PlayerHand(600, 50, -18, "horizontal")    # Player 1 - Top
+        self.hand_left   = PlayerHand(100, 350, -18, "vertical")     # Player 2 - Left
         self.ui_hands = []
         self.ui_hands.append(self.hand_bottom)
         if self.game_state.number_players >= 2:
             self.ui_hands.append(self.hand_top)
         if self.game_state.number_players == 3:
             self.ui_hands.append(self.hand_left)
+
+        # Preparing the "start state"
+        self.create_players() 
+        self.deal_hands()
+        self.choose_start_player()
+        self.reset_state()
 
 
         self.draw_button = Button(actionButton_surf, 460, 350, "Draw", button_font, self.show_draw_options)
@@ -234,6 +236,7 @@ class playScreen(screenBase):
         self.is_trading = False
 
     def restart_game(self):
+        self.start_time = pygame.time.get_ticks()
         self.game_state.reset_state()
         self.create_players()
         self.deal_hands()
@@ -348,8 +351,8 @@ class playScreen(screenBase):
             self.is_trading = False
             return
         self.is_trading = True
-        cards_from_the_deck = self.game_state.deck.draw_cards(1)
-        self.game_state.current_player.draw(cards_from_the_deck)
+        # Re-using "card flying from the deck animation"
+        self.draw_and_animate_cards(number_of_cards=1, pos_x=self.hand_bottom.center_x, pos_y=self.hand_bottom.center_y, player=self.game_state.current_player)
 
     def activate_stealing(self):
         if self.is_trading:
@@ -387,14 +390,18 @@ class playScreen(screenBase):
             self.draw_sub_buttons.append(btn)
 
     def execute_draw(self, number_of_cards): #added this to check functionality of animation
-        cards = self.game_state.deck.draw_cards(number_of_cards=number_of_cards)
-        self.game_state.current_player.draw(cards)
+        self.draw_and_animate_cards(number_of_cards, pos_x=self.hand_bottom.center_x, pos_y=self.hand_bottom.center_y, player=self.game_state.current_player)
         self.draw_sub_buttons = []
         self.done_moves.append(PlayerMove.DRAW)
 
-        dest_x, dest_y = 640, 500
+    # Animation for all cards movement
+    def draw_and_animate_cards(self, number_of_cards, pos_x, pos_y, player):
+        cards = self.game_state.deck.draw_cards(number_of_cards=number_of_cards)
+        player.draw(cards)
         for i in range(number_of_cards):
-            self.deck.start_draw_animation(dest_x + i * 20, dest_y, speed=12.0)
+            # Overlay "trick" to show many cards being drawn from the deck
+            self.deck.start_draw_animation(pos_x + i * 20, pos_y, speed=10.0)
+
 
     def create_players(self):
         self.game_state.players.clear()
@@ -407,8 +414,10 @@ class playScreen(screenBase):
         # self.game_state.players = players
 
     def deal_hands(self):
-        for player in self.game_state.players:
-            player.draw(self.game_state.deck.draw_cards(4))
+        # Adding "flying cards" animation, using zip to match player with their hand position
+        for player, hand in zip(self.game_state.players, self.ui_hands):
+            self.draw_and_animate_cards(number_of_cards=4, pos_x=hand.center_x, pos_y=hand.center_y, player=player)
+            
     
     def choose_start_player(self):
         self.game_state.current_player = self.game_state.players.popleft()
@@ -769,7 +778,11 @@ class playScreen(screenBase):
 
         # Draw all hands once with final hover flags so overlays show without lifting
         for hand in self.ui_hands:
-            hand.draw(self.screen)
+            # Calculating the distance between hand and a deck. sqrt(x**2 + y**2)
+            # Then we empirically find a constant so that the hand is shown when the cards are arrived.
+            distance = (hand.center_x - self.deck.rect.centerx)**2 + (hand.center_y - self.deck.rect.centery)**2
+            if pygame.time.get_ticks() - self.start_time > (distance)**0.5 * 1.35:
+                hand.draw(self.screen)
 
         # Prompting the user to steal if it's stealing (relevant for human player)
         if self.is_stealing:
