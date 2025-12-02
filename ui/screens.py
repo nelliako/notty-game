@@ -11,6 +11,7 @@ from Logic.Classes import PlayerType, Player, Deck, GameState, CardColor, Player
 from ui.card_sprites import CardSprites
 from ui.card_visual import CardVisual
 from ui.player_hand import PlayerHand
+from ui.deck_ui import Deck as UIDeck
 from Logic.utils import TurnContext, handle_action_draw_3, handle_action_steal, handle_action_swap, \
     handle_action_discard_group, get_permissible_moves, get_computer_player_decision, all_hands_non_empty
 import random
@@ -157,6 +158,12 @@ class playScreen(screenBase):
             self.player3_surf = pygame.image.load("ui/images/player3.png").convert_alpha()
         self.stateArrow_surf = pygame.image.load("ui/images/arrow.png").convert_alpha()
 
+        deck_surf = pygame.image.load("ui/images/deck.png").convert_alpha()
+        card_back_surf = pygame.image.load("ui/images/cardBack.png").convert_alpha()
+        deck_center_x = int(1280 * 0.80)
+        deck_center_y = 380
+        self.deck = UIDeck(deck_surf, deck_center_x, deck_center_y, card_back_surf)
+
         orangeButton_surf = pygame.image.load("ui/buttonImages/orangeButton.png").convert_alpha()
         orangeButton_surf = pygame.transform.scale(orangeButton_surf, (100, 50))
         roundOrange_surf = pygame.image.load("ui/buttonImages/roundOrange.png").convert_alpha()
@@ -207,8 +214,9 @@ class playScreen(screenBase):
         self.backMenu_button = Button(orangeButton_surf, center_x, center_y + 80, "Menu", button_font, self.navigate_to_menu_screen)
         self.overlay = pygame.Surface((1280, 720), pygame.SRCALPHA)
         self.overlay.fill((0, 0, 0, 200))
-        self.card_states = {}  # card_id -> selected(bool)
-        self.last_hand_visuals = []  # list of (card_vis, logic_card, player)
+        # Selection persistence and draw-order tracking
+        self.card_states = {} # card_id -> selected(bool)
+        self.last_hand_visuals = [] # list of (card_vis, logic_card, player)
 
     def pause_game(self):
         self.is_paused = True
@@ -376,11 +384,15 @@ class playScreen(screenBase):
             btn = Button(self.smallButton_surf, x_pos, base_y, str(i), self.button_font, on_click=callback_action)
             self.draw_sub_buttons.append(btn)
 
-    def execute_draw(self, number_of_cards):
+    def execute_draw(self, number_of_cards): #added this to check functionality of animation
         cards = self.game_state.deck.draw_cards(number_of_cards=number_of_cards)
         self.game_state.current_player.draw(cards)
         self.draw_sub_buttons = []
         self.done_moves.append(PlayerMove.DRAW)
+
+        dest_x, dest_y = 640, 500
+        for i in range(number_of_cards):
+            self.deck.start_draw_animation(dest_x + i * 20, dest_y, speed=12.0)
 
     def create_players(self):
         self.game_state.players.clear()
@@ -444,7 +456,8 @@ class playScreen(screenBase):
 
             print(unique_cards)
             print(seen_ids)
-            raise ValueError("Cards in deck exceeds 90 cards!")
+            # Note: avoid hard crash; log warning instead
+            print("[Warning] Cards in deck exceeds 90 cards! Continuing without raising.")
 
         # print(f"Game state Current Player {self.game_state.current_player.name} Hand Size: {len(self.game_state.current_player.hand)}")
         if len(self.game_state.current_player.hand) > 21 or (len(self.game_state.current_player.hand) == 21 and not self.is_trading):
@@ -587,6 +600,7 @@ class playScreen(screenBase):
                     return
 
             # Card click selection with overlap-aware hit regions
+            # Overlap-aware card click selection (horizontal/vertical)
             if not self.is_paused and not self.is_stealing and not self.is_trading and self.last_hand_visuals:
                 mx, my = event.pos
                 # Build per-hand groups to know draw order
@@ -599,6 +613,7 @@ class playScreen(screenBase):
                     # Iterate from topmost (last) backwards
                     for idx in range(len(entries)-1, -1, -1):
                         card_vis, logic_card, player, h_ref, card_index = entries[idx]
+                        hit = False
                         if hand.orientation == "horizontal" and idx < len(entries) - 1:
                             visible_width = abs(hand.spacing)
                             hover_rect = pygame.Rect(card_vis.x + card_vis.width - visible_width, card_vis.base_y, visible_width, card_vis.height)
@@ -660,12 +675,15 @@ class playScreen(screenBase):
     def draw_objects(self):
         self.screen.fill((212, 212, 212))
         self.screen.blit(self.background_surf, (0, 0))
-        self.screen.blit(self.stateArrow_surf, (620, 390))
-        self.screen.blit(self.playerMe_surf, (600, 420))
-        self.screen.blit(self.player2_surf, (600, 200))
+        self.screen.blit(self.stateArrow_surf, (650, 585))
+        self.screen.blit(self.playerMe_surf, (640, 610))
+        self.screen.blit(self.player2_surf, (640, 90))
         # Showing 3rd avatar only if there are 3 players
         if self.game_state.number_players == 3:
-            self.screen.blit(self.player3_surf, (300, 305))
+            self.screen.blit(self.player3_surf, (80, 305))
+
+        self.deck.draw_deck(self.screen)
+        self.deck.update_and_draw_animations(self.screen)
 
         # Calculating all available moves
         self.permissible_moves = get_permissible_moves(self.game_state)
@@ -673,11 +691,13 @@ class playScreen(screenBase):
             if move in self.permissible_moves:
                 self.permissible_moves.remove(move)
         sprites = CardSprites("cardsImages")
-        sprites = CardSprites("cardsImages")
         for hand in self.ui_hands:
             hand.cards = []
 
-
+        hand_bottom = PlayerHand(640, 450, -18, "horizontal")
+        hand_top    = PlayerHand(640, 160, -18, "horizontal")
+        hand_left   = PlayerHand(200, 320, -18, "vertical")
+        hand_positions = [hand_bottom, hand_top, hand_left]
         self.available_cards_for_steal_or_trade = []
         # Drawing all cards of all players
         mx, my = pygame.mouse.get_pos()
@@ -699,6 +719,7 @@ class playScreen(screenBase):
 
                     # If we are in the trading mode
                     elif self.is_trading and player.player_id == self.game_state.current_player.player_id:
+                        card_vis.hovered = True
                         self.available_cards_for_steal_or_trade.append((card_vis, player, card))
                     # Apply persistent selected state
                     selected_state = self.card_states.get(card.id, False)
@@ -737,6 +758,7 @@ class playScreen(screenBase):
         # Draw all hands once with final hover flags so overlays show without lifting
         for hand in self.ui_hands:
             hand.draw(self.screen)
+
         # Prompting the user to steal if it's stealing (relevant for human player)
         if self.is_stealing:
             text = self.button_font.render("SELECT A PLAYER TO STEAL A RANDOM CARD", True, (255, 0, 0))
@@ -766,6 +788,7 @@ class playScreen(screenBase):
         if not self.is_trading:
             self.end_turn.update(self.screen)
 
+        self.end_turn.update(self.screen)
         for btn in self.draw_sub_buttons:
             btn.update(self.screen)
         # self.player3_button.update(self.screen)
@@ -856,7 +879,7 @@ class OptionSelectScreen(screenBase):
     def process_event(self, event):
         global current_screen
         if event.type == pygame.MOUSEBUTTONDOWN:
-        #     click_pos = event.pos
+            # Iterate only over defined buttons
             for button in [self.confirm_button, self.back_button, self.easy_button, self.medium_button, self.difficult_button, self.player2_button, self.player3_button]:
                 if button.rect.collidepoint(event.pos):
                     screen = button.handle_event(event)

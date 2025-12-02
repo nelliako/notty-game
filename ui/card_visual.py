@@ -31,6 +31,7 @@ class CardVisual:
     def update_position(self):
         # For vertical hands, offset selection along X (to the right)
         # For horizontal hands, offset selection along Y (lift up)
+
         if self.selected and self.hand_orientation == "vertical":
             draw_x = self.x + self.offset_x
             draw_y = self.base_y
@@ -40,6 +41,7 @@ class CardVisual:
         self.rect.topleft = (draw_x, draw_y)
 
     def draw(self, surface):
+
         # Apply axis-aware selection offset (X for vertical, Y for horizontal)
         if self.selected and self.hand_orientation == "vertical":
             draw_x = self.x + self.offset_x

@@ -5,6 +5,7 @@ import os
 class CardSprites:
     # loadpngs and store them in a dictionary
 
+
     def __init__(self, folder_name="cardsImages"):
         self.cards = {}
 

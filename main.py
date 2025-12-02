@@ -2,14 +2,6 @@ import sys
 import os
 import importlib
 
-# Force Python to not use cached imports for quick iteration during development
-sys.dont_write_bytecode = True
-
-# Clear all ui and Logic modules from cache
-modules_to_remove = [key for key in list(sys.modules.keys()) if key.startswith('ui') or key.startswith('Logic')]
-for module in modules_to_remove:
-    del sys.modules[module]
-
 from Logic.GameLogic1 import run_game
 from Logic.GameLogic import game_loop
 from ui.see_screens import see_screens
@@ -42,8 +34,8 @@ from ui.see_cards import see_cards
 if __name__ == '__main__':
     # Choose one entry point to run by default
     # see_cards()
-    #see_screens()
+    # see_screens()
     # run_game()
-     game_loop()
+    # game_loop()
 
      
