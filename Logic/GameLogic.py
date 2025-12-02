@@ -41,7 +41,7 @@ def game_loop():
     game_state.deck.shuffle_deck()
 
     for i in range(number_of_players):
-        game_state.players.append(Player(player_id=uuid.uuid4(), hand=[], player_type=PlayerType.COMPUTER_EASY, name=f"Player {i}"))
+        game_state.players.append(Player(player_id=uuid.uuid4(), hand=[], player_type=PlayerType.COMPUTER_MEDIUM, name=f"Player {i}"))
 
     # deal 4 cards to each player
     for player in game_state.players:
@@ -54,10 +54,10 @@ def game_loop():
 
         # set the current player to the first player and remove current player from the players list
         game_state.current_player = game_state.players.popleft()
-
+        print('------------------------------------------------')#Optional Output Print for ease of read : remove for final
         print(f"It's {game_state.current_player.name} turn. It's now turn {turn}.")
         moves = get_permissible_moves(game_state)
-
+        print('------------------------------------------------')#Optional Output Print for ease of read : remove for final
         player_moves_map = {
             PlayerType.COMPUTER_EASY: EASY(game_state, moves),
             PlayerType.COMPUTER_MEDIUM: MEDIUM(game_state, moves),
@@ -74,7 +74,7 @@ def game_loop():
             print(f"you chose move: {chosen_move}")
             move = moves[chosen_move]
         else:
-            move, _ = player_moves_map[game_state.current_player.type].choose()
+            move = player_moves_map[game_state.current_player.type].choose() #calling to playerDecision
             print(f"{game_state.current_player.name} chose move: {move}")
 
         while True:
@@ -129,7 +129,7 @@ def game_loop():
                 print(f"you chose move: {chosen_move}")
                 move = moves[chosen_move]
             else:
-                move, _ = player_moves_map[game_state.current_player.type].choose()
+                move = player_moves_map[game_state.current_player.type].choose()
                 print(f"{game_state.current_player.name} chose move: {move}")
                 if move == PlayerMove.PASS or move == PlayerMove.END_TURN:
                     break

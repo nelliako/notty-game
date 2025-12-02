@@ -91,7 +91,7 @@ def create_deck():
     all_cards = all_cards + [Card(c.color, c.number) for c in all_cards]
     print(f"Initial Deck Size: {len(all_cards)}")
     random.shuffle(all_cards)
-    return Deque(all_cards)
+    return deque(all_cards)
 
 
 class Deck:
