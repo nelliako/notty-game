@@ -8,6 +8,7 @@ import random
 from typing import List, Dict
 from Logic.Classes import GameState, Player, PlayerMove, Card, CardColor
 from Logic.ValidateCardLogic import *
+from Logic.computerLogic.mcts import *
 
 # Base Class for computer_player_decision Players 'EASY', 'MEDIUM' & 'HARD'
 class playerDecision:
@@ -193,7 +194,7 @@ class MEDIUM(playerDecision):
             missing_cards=self.get_missing_cards('number',each_group)
             if missing_cards:
                 target_cards=target_cards+missing_cards
-        return target_cards
+        return list(set(target_cards))
     
     #checks for duplicate cards in hand as that is the most ideal candidate for dumping
     def get_duplicity(self,target: Card, hand: list[Card]) -> int:
@@ -205,7 +206,7 @@ class MEDIUM(playerDecision):
     def get_decisionWeights(self,hand):
         color_potential_groups,number_potential_groups = self.get_potential_groups(hand)
         weights: Dict[Card, List[int]] = {}
-        non_membership_penalty_factor = 0.3 # arbitrary adjust for performance
+        non_membership_penalty_factor = 0.4 # arbitrary adjust for performance
         for each_card in hand:
             card_color_weight=0
             card_number_weight=0
@@ -228,13 +229,16 @@ class MEDIUM(playerDecision):
     def choose(self):
         current_hand = self.game_state.current_player.hand
         valid_group = self.get_discard_group()
+        weights=self.get_decisionWeights(current_hand)
+        max_color_weight_in_hand,max_number_weight_in_hand,_= max(weights.values(),key=lambda x:x[0]+x[1]) if weights else [0,0,0]
+        max_weight_in_hand = max_color_weight_in_hand+max_number_weight_in_hand
+        hand_threshold = (13 if max_weight_in_hand<2 else 16) if weights else 20 #arbitrary tuning
         if valid_group!=None:
             move= PlayerMove.DISCARD_VALID_CARDS
-        elif len(current_hand)>=17 and PlayerMove.DRAW_ONE in self.available_moves: #17 is arbitrary, can alter to check performance; \\
+        elif len(current_hand)>=hand_threshold and PlayerMove.DRAW_ONE in self.available_moves: #17 is arbitrary, can alter to check performance; \\
             # basically prioritises draw 1 and discard 1 when hand volume higher than 17 # TODO: maybe prioritise passing here?
                 move = PlayerMove.DRAW_ONE
         else:
-            weights=self.get_decisionWeights(current_hand)
             duplicate_cards = any(w[2] > 1 for w in weights.values())
             if duplicate_cards and PlayerMove.DRAW_ONE in self.available_moves:
                 move= PlayerMove.DRAW_ONE
@@ -244,7 +248,7 @@ class MEDIUM(playerDecision):
                 else:
                     target_piles = [self.game_state.players[0].hand, self.game_state.deck.cards]
                 probabilities: Dict[Card, tuple[float,int]] = {} # Card -> (best_probability, pile_index)
-                for each_target_card in set(self.get_target_cards(current_hand)): #goes through each want to have card for the current existing hand
+                for each_target_card in self.get_target_cards(current_hand): #goes through each want to have card for the current existing hand
                     best_prob =0.0
                     best_index = -1
                     for i,pile in enumerate(target_piles):
@@ -314,8 +318,8 @@ class MEDIUM(playerDecision):
     def discard_card_from_hand(self) -> int:
         current_hand=self.game_state.current_player.hand
         weights=self.get_decisionWeights(current_hand)
-        duplicate_cards_valuation_factor = 2
-        duplicate_cards = [card for card, weight_value in weights.items() if weight_value[2] > 1]
+        duplicate_cards_valuation_factor = 1.5
+        
         temp = []
         #unpacking the weights dict for ease of use
         for index, each_card in enumerate(current_hand):
@@ -354,7 +358,8 @@ class HARD(playerDecision):
 
     #TODO: Core logic for player 'HARD'
     def choose(self):
-        mcts.get
+        mcts = MonteCarlo(self.game_state,self.available_moves)
+        mcts.get_optimal_move()
 
     #returns single chosen move and calls updateAvailableMoves
     def get_move(self):
