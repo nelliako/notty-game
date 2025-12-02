@@ -45,7 +45,7 @@ def colours_identical(cards: List[Card]) -> list[Card] | None:
                 break
             subset = keys[i:i+3]
             for j in range(1,3):
-                print(subset[j]- subset[j-1])
+                # print(subset[j]- subset[j-1])
 
                 if (subset[j]- subset[j-1]) == 1:
                     consecutive_numbers += 1

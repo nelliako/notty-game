@@ -225,7 +225,8 @@ class playScreen(screenBase):
         self.is_paused = False
 
     def reset_state(self):
-        self.permissible_moves = []
+        self.permissible_moves = [] # get_permissible_moves(self.game_state)44
+        print("reset_state(): Permissible Moves: ", self.permissible_moves)
         self.done_moves = []
         self.draw_sub_buttons = []
         self.available_cards_for_steal_or_trade = []
@@ -362,9 +363,10 @@ class playScreen(screenBase):
         self.is_stealing = True
     
     def trigger_end_turn(self):
-        self.reset_state()
         self.game_state.players.append(self.game_state.current_player)
         self.game_state.current_player = self.game_state.players.popleft()
+        self.reset_state()
+        self.permissible_moves = get_permissible_moves(self.game_state)
 
     def show_draw_options(self):
         if self.is_trading:
@@ -435,6 +437,13 @@ class playScreen(screenBase):
 
         # print(f"Game State Deck size: {len(self.game_state.deck.cards)}")
 
+        # Calculating all available moves
+        self.permissible_moves = get_permissible_moves(self.game_state)
+        for move in self.done_moves:
+            if move in self.permissible_moves:
+                self.permissible_moves.remove(move)
+
+
         total_cards = list(self.game_state.deck.cards)
         for player in [self.game_state.current_player] + list(self.game_state.players):
             if player is None:
@@ -463,10 +472,13 @@ class playScreen(screenBase):
         if len(self.game_state.current_player.hand) > 21 or (len(self.game_state.current_player.hand) == 21 and not self.is_trading):
             raise ValueError(f"{self.game_state.current_player.name}'s hand exceeds 20 cards!")
 
-
+        print(f"proces_event(): {self.game_state.current_player.name} Permissible moves: {self.permissible_moves}")
         if self.game_state.current_player.type != PlayerType.HUMAN:
             computer_player_decision = get_computer_player_decision(game_state=self.game_state, moves=self.permissible_moves)
-            move = computer_player_decision.choose()
+            if len(self.permissible_moves) != 0:
+                move = computer_player_decision.choose()
+            else:
+                raise ValueError("[Warning] Permissible moves cannot be empty!")
             print(f"{self.game_state.current_player.name} chose move: {move}")
 
             # Getting rid of the chosen buttons when computer player is playing (if it's not a discard button)
@@ -688,11 +700,6 @@ class playScreen(screenBase):
         self.deck.draw_deck(self.screen)
         self.deck.update_and_draw_animations(self.screen)
 
-        # Calculating all available moves
-        self.permissible_moves = get_permissible_moves(self.game_state)
-        for move in self.done_moves:
-            if move in self.permissible_moves:
-                self.permissible_moves.remove(move)
         sprites = CardSprites("cardsImages")
         for hand in self.ui_hands:
             hand.cards = []
