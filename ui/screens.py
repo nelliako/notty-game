@@ -350,6 +350,8 @@ class playScreen(screenBase):
         if self.is_stealing:
             self.is_trading = False
             return
+        if self.is_trading:
+            return
         self.is_trading = True
         # Re-using "card flying from the deck animation"
         self.draw_and_animate_cards(number_of_cards=1, pos_x=self.hand_bottom.center_x, pos_y=self.hand_bottom.center_y, player=self.game_state.current_player)
