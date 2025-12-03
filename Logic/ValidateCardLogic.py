@@ -1,3 +1,5 @@
+import random
+from itertools import chain
 from typing import List, Dict
 
 from pygame import key
@@ -39,34 +41,46 @@ def colours_identical(cards: List[Card]) -> list[Card] | None:
         keys = sorted(list(colors_cards[color].keys()))
         # print(keys)
 
+        # create subsets
+        subsets = []
         for i in range(len(keys)):
-            consecutive_numbers = 0
             if i+3 > len(keys):
                 break
-            subset = keys[i:i+3]
-            for j in range(1,3):
-                # print(subset[j]- subset[j-1])
 
-                if (subset[j]- subset[j-1]) == 1:
+            for l in range(i+3, len(keys)+1):
+                subsets.append(keys[i:l])
+
+        # loop over subsets
+        for sub in subsets:
+            consecutive_numbers = 0
+            # print(f"Subset: {sub}")
+            for j in range(1, len(sub)):
+                # print(f"Difference: {sub[j]- sub[j-1]}")
+                if (sub[j]- sub[j-1]) == 1:
                     consecutive_numbers += 1
+                else:
+                    break
 
-                # print(consecutive_numbers)
-            if consecutive_numbers >= 2:
+            # print(f"Number of Consecutive Numbers: {consecutive_numbers}")
+            if consecutive_numbers == len(sub)-1:
                 cards_sublist = []
-                for number in subset:
+                for number in sub:
                     cards_sublist.append(colors_cards[color][number])
-
+                # print(f"adding subset: {cards_sublist}")
                 cards_to_discard.append(cards_sublist)
 
     if len(cards_to_discard) > 0:
-        return cards_to_discard[0]
+        sorted_cards = sorted(cards_to_discard, key=len, reverse=True)
+        # for card in sorted_cards:
+            # print(f"Discard Cards: {card}")
+        return sorted_cards[0]
 
     return None
 
 
 def numbers_identical(cards: List[Card]) -> list[Card] | None:
     number_cards: Dict[int, List[Card]] = {}
-
+    validate_cards = []
     for card in set(cards):
         number = card.number
 
@@ -77,10 +91,16 @@ def numbers_identical(cards: List[Card]) -> list[Card] | None:
             number_cards[number].append(card)
 
     for number in number_cards:
-        if len(number_cards[number]) < 3:
+        if len(number_cards[number]) < 4:
             continue
         else:
-            return number_cards[number]
+            validate_cards.append(number_cards[number])
+
+    if len(validate_cards) > 0:
+        validate_cards = sorted(validate_cards, key=len, reverse=True)
+        # for card in validate_cards:
+            # print(f"Discard Cards: {card}")
+        return validate_cards[0]
 
     return None
 
@@ -88,6 +108,13 @@ def numbers_identical(cards: List[Card]) -> list[Card] | None:
 def contains_valid_group(cards: List[Card]) -> list[Card] | None:
     number_cards = numbers_identical(cards)
     color_cards = colours_identical(cards)
+    if number_cards is not None and color_cards is not None:
+        if len(number_cards) > len(color_cards):
+            return number_cards
+        elif len(number_cards) < len(color_cards):
+            return color_cards
+        else:
+            return random.choice([number_cards, color_cards])
     if number_cards is not None:
         # print("numbersIdentical")
         return number_cards
@@ -97,3 +124,5 @@ def contains_valid_group(cards: List[Card]) -> list[Card] | None:
         return color_cards
 
     return None
+
+# def consecutive_numbers(cards: List[Card]) -> list[Card] | None:
