@@ -15,15 +15,23 @@ from ui.deck_ui import Deck as UIDeck
 from Logic.utils import TurnContext, handle_action_draw_3, handle_action_steal, handle_action_swap, \
     handle_action_discard_group, get_permissible_moves, get_computer_player_decision, all_hands_non_empty
 import random
+from ui.sounds import GameSound
 
 current_screen = None
+game_sound = None
 
 class screenBase():
     def __init__(self, screen):
+        global game_sound
         self.screen = screen
         self.close = False
+        if game_sound is None:
+            game_sound = GameSound()
+        self.sound = game_sound
 
     def process_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            self.sound.playClick()
         pass
 
     def update_objects(self):
@@ -78,10 +86,8 @@ class menuScreen(screenBase):
 
     def process_event(self, event):
         global current_screen
-        # if event.type == pygame.MOUSEBUTTONDOWN:
-        # checkForInput
-        # click_pos = event.pos
-
+        super().process_event(event)
+        
         if event.type == pygame.MOUSEBUTTONDOWN:
             for button in [self.play_button, self.options_button, self.exit_button]:
                 if button.rect.collidepoint(event.pos):
@@ -280,13 +286,13 @@ class playScreen(screenBase):
 
         font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 20)
         text_line_height = font.get_linesize()
-        text_x = panel_x + 90  # 从70改成90，再增加左边距
+        text_x = panel_x + 90
         text_y = panel_y + 30 + self.guide_scroll
 
         start_y = panel_y + 30
         max_draw_y = panel_y + target_height - 30
 
-        max_text_width = target_width - 180  # 从140改成180，左右各90px边距，所以减180
+        max_text_width = target_width - 180
 
         all_lines = []
         for line in self.guide_text:
@@ -432,6 +438,9 @@ class playScreen(screenBase):
 
     def process_event(self, event):
         global current_screen
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if not (self.showing_guide and event.button in [4, 5]):
+                super().process_event(event)
 
         if self.showing_guide:
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -913,6 +922,8 @@ class OptionSelectScreen(screenBase):
 
     def process_event(self, event):
         global current_screen
+        super().process_event(event)
+        
         if event.type == pygame.MOUSEBUTTONDOWN:
             # Iterate only over defined buttons
             for button in [self.confirm_button, self.back_button, self.easy_button, self.medium_button, self.difficult_button, self.player2_button, self.player3_button]:
@@ -958,6 +969,13 @@ class EndScreen(screenBase):
     def __init__(self, screen, game_state: GameState):
         super().__init__(screen)
         self.game_state = game_state
+
+        self.sound.stopBackgroundMusic()
+        if self.game_state.state == State.WON:
+            self.sound.playWin()
+        elif self.game_state.state == State.LOST:
+            self.sound.playLose()
+        
         font_path = "ui/Font/Minecraftia-Regular.ttf"
         self.WinResult = textObject(640, 220, "YOU WIN!", font_path, 150, 'Black', 'center')
         self.LoseResult = textObject(640, 220, "YOU LOSE!", font_path, 150, 'Black', 'center')
@@ -981,9 +999,11 @@ class EndScreen(screenBase):
 
     def navigate_to_restart(self):
         self.game_state.reset_state()
+        self.sound.playBackgroundMusic()
         return playScreen(self.screen, self.game_state)
 
     def navigate_to_menu(self):
+        self.sound.playBackgroundMusic()
         return menuScreen(self.screen, self.game_state)
 
     def update_objects(self):
@@ -993,6 +1013,7 @@ class EndScreen(screenBase):
 
     def process_event(self, event):
         global current_screen
+        super().process_event(event)
 
         if event.type == self.win_flash_timer:
             self.win_color_index = (self.win_color_index + 1) % len(self.win_colors)
