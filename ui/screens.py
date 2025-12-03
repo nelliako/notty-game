@@ -414,6 +414,12 @@ class playScreen(screenBase):
             else:
                 self.game_state.players.append(Player(image=None, x=0, y=0, player_id=uuid.uuid4(), hand=[], player_type=self.game_state.computer_difficulty, name=f"Player {i}"))
         # self.game_state.players = players
+    
+    # Finding the "real" first player index 
+    def find_first_player_index(self, all_players) -> int:
+        for i, player in enumerate(all_players):
+            if player.name == "Player 0":
+                return i
 
     def deal_hands(self):
         # Adding "flying cards" animation, using zip to match player with their hand position
@@ -727,8 +733,11 @@ class playScreen(screenBase):
         mx, my = pygame.mouse.get_pos()
 
         all_players = [self.game_state.current_player] + list(self.game_state.players)
+        # Finding the "real" first player - who began playing the first
+        actual_first_player_index = self.find_first_player_index(all_players)
         self.last_hand_visuals = []
-        for i, player in enumerate(all_players):
+        # Rotating so that the "real" first player is always at the bottom
+        for i, player in enumerate(all_players[actual_first_player_index:]+all_players[:actual_first_player_index]):
                 if i >= len(self.ui_hands):
                     break
 
