@@ -23,6 +23,12 @@ class GameSound():
 
     def stopBackgroundMusic(self):
         pygame.mixer.music.stop()
+    
+    def pauseBackgroundMusic(self):
+        pygame.mixer.music.pause()
+    
+    def unpauseBackgroundMusic(self):
+        pygame.mixer.music.unpause()
 
     def playClick(self):
         self.click_sound.play()

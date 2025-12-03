@@ -79,17 +79,41 @@ class menuScreen(screenBase):
 
         button_surf = pygame.image.load("ui/buttonImages/orangeButton.png").convert_alpha()
         button_surf = pygame.transform.scale(button_surf, (200, 50))
+        soundOn_surf = pygame.image.load("ui/buttonImages/speaker.png").convert_alpha()
+        soundOn_surf = pygame.transform.scale(soundOn_surf, (30, 30))
+        soundOff_surf = pygame.image.load("ui/buttonImages/mute.png").convert_alpha()
+        soundOff_surf = pygame.transform.scale(soundOff_surf, (30, 30))
 
         button_font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 20)
         self.play_button = Button(button_surf, 640, 450, "Play", button_font, self.navigate_to_play_screen)
         self.options_button = Button(button_surf, 640, 530, "Options", button_font, self.navigate_to_options_screen)
         self.exit_button = Button(button_surf, 640, 610, "Exit", button_font, self.navigate_to_exit_screen)
+        self.speaker_button = Button(soundOn_surf, 40, 40, "", button_font, self.toggle_sound)
+        self.mute_button = Button(soundOff_surf, 40, 40, "", button_font, self.toggle_sound)
+        self.is_muted = False
+
+    def toggle_sound(self):
+        if self.is_muted:
+            self.is_muted = False
+            self.sound.unpauseBackgroundMusic()
+        else:
+            self.is_muted = True
+            self.sound.pauseBackgroundMusic()
 
     def process_event(self, event):
         global current_screen
         super().process_event(event)
         
         if event.type == pygame.MOUSEBUTTONDOWN:
+            if not self.is_muted:
+                if self.speaker_button.rect.collidepoint(event.pos):
+                    self.toggle_sound()
+                    return
+            else:
+                if self.mute_button.rect.collidepoint(event.pos):
+                    self.toggle_sound()
+                    return
+            
             for button in [self.play_button, self.options_button, self.exit_button]:
                 if button.rect.collidepoint(event.pos):
                     screen = button.handle_event(event)
@@ -100,20 +124,6 @@ class menuScreen(screenBase):
                         return
 
 
-            # current_screen = playScreen(self.screen, self.game_state)
-            # self.close = True
-            # return
-
-            # if self.options_button.handle_event(click_pos):
-            #     current_screen = OptionSelectScreen(self.screen, self.game_state)
-            #     self.close = True
-            #     return
-            #
-            # if self.exit_button.handle_event(click_pos):
-            #     print("EXIT CLICKED")
-            #     self.close = True
-            #     current_screen = None
-            #     return
 
     def navigate_to_play_screen(self):
         print("Navigate to Play screen")
@@ -144,6 +154,11 @@ class menuScreen(screenBase):
         self.play_button.update(self.screen)
         self.options_button.update(self.screen)
         self.exit_button.update(self.screen)
+        
+        if self.is_muted:
+            self.mute_button.update(self.screen)
+        else:
+            self.speaker_button.update(self.screen)
 
 
 class playScreen(screenBase):
@@ -190,6 +205,10 @@ class playScreen(screenBase):
         pause_surf = pygame.image.load("ui/buttonImages/pause.png").convert_alpha()
         pause_surf = pygame.transform.scale(pause_surf, (40, 40))
         guide_surf = pygame.transform.scale(blue_surf, (80, 40))
+        soundOn_surf = pygame.image.load("ui/buttonImages/speaker.png").convert_alpha()
+        soundOn_surf = pygame.transform.scale(soundOn_surf, (30, 30))
+        soundOff_surf = pygame.image.load("ui/buttonImages/mute.png").convert_alpha()
+        soundOff_surf = pygame.transform.scale(soundOff_surf, (30, 30))
 
         button_font = pygame.font.Font("ui/Font/Minecraftia-Regular.ttf", 13)
         self.button_font = button_font
@@ -219,6 +238,10 @@ class playScreen(screenBase):
         self.discard_button = Button(actionButton_surf, 820, 350, "Discard", button_font, self.handle_discard)
         self.end_turn = Button(blue_surf, 1210, 670, "End Turn", button_font, self.trigger_end_turn)
 
+        self.speaker_button = Button(soundOn_surf, 40, 40, "", button_font, self.toggle_sound)
+        self.mute_button = Button(soundOff_surf, 40, 40, "", button_font, self.toggle_sound)
+        self.is_muted = False
+
         self.guide_button = Button(guide_surf, 1025, 40, "Guide", button_font, self.open_guide)
         self.playForMe_button = Button(playForMe_surf, 1145, 40, "", button_font, self.play_for_me_button)
         self.pause_button = Button(pause_surf, 1245, 40, "", button_font, self.pause_game)
@@ -232,6 +255,14 @@ class playScreen(screenBase):
         self.card_states = {} # card_id -> selected(bool)
         self.last_hand_visuals = [] # list of (card_vis, logic_card, player)
         self.selected_player_for_steal = None  
+
+    def toggle_sound(self):
+        if self.is_muted:
+            self.is_muted = False
+            self.sound.unpauseBackgroundMusic()
+        else:
+            self.is_muted = True
+            self.sound.pauseBackgroundMusic()
 
     def pause_game(self):
         self.is_paused = True
@@ -678,7 +709,16 @@ class playScreen(screenBase):
                     return
         
 
-        if event.type == pygame.MOUSEBUTTONDOWN:            
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if not self.is_muted:
+                if self.speaker_button.rect.collidepoint(event.pos):
+                    self.toggle_sound()
+                    return
+            else:
+                if self.mute_button.rect.collidepoint(event.pos):
+                    self.toggle_sound()
+                    return
+            
             active_buttons = []
             
             if self.is_paused:
@@ -938,7 +978,11 @@ class playScreen(screenBase):
         self.playForMe_button.update(self.screen)
         self.pause_button.update(self.screen)
         self.guide_button.update(self.screen)
-        self.pause_button.update(self.screen)
+        
+        if self.is_muted:
+            self.mute_button.update(self.screen)
+        else:
+            self.speaker_button.update(self.screen)
 
         # To prevent cheating and bugs by ending the turn prematurely
         if not self.is_trading:
