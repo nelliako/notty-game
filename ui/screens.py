@@ -354,7 +354,7 @@ class playScreen(screenBase):
             return
         self.is_trading = True
         # Re-using "card flying from the deck animation"
-        self.draw_and_animate_cards(number_of_cards=1, pos_x=self.hand_bottom.center_x, pos_y=self.hand_bottom.center_y, player=self.game_state.current_player)
+        self.draw_and_animate_cards(number_of_cards=1, player=self.game_state.current_player)
 
     def activate_stealing(self):
         if self.is_trading:
@@ -392,17 +392,17 @@ class playScreen(screenBase):
             self.draw_sub_buttons.append(btn)
 
     def execute_draw(self, number_of_cards): #added this to check functionality of animation
-        self.draw_and_animate_cards(number_of_cards, pos_x=self.hand_bottom.center_x, pos_y=self.hand_bottom.center_y, player=self.game_state.current_player)
+        self.draw_and_animate_cards(number_of_cards, player=self.game_state.current_player)
         self.draw_sub_buttons = []
         self.done_moves.append(PlayerMove.DRAW)
 
     # Animation for all cards movement
-    def draw_and_animate_cards(self, number_of_cards, pos_x, pos_y, player):
+    def draw_and_animate_cards(self, number_of_cards, player):
         cards = self.game_state.deck.draw_cards(number_of_cards=number_of_cards)
         player.draw(cards)
         for i in range(number_of_cards):
             # Overlay "trick" to show many cards being drawn from the deck
-            self.deck.start_draw_animation(pos_x + i * 20, pos_y, speed=10.0)
+            self.deck.start_draw_animation(player.center_x + i * 20, player.center_y, speed=20.0)
 
 
     def create_players(self):
@@ -410,9 +410,9 @@ class playScreen(screenBase):
         # players = deque()
         for i in range(self.game_state.number_players):
             if i == 0:
-                self.game_state.players.append(Player(image=None, x=0, y=0, player_id=uuid.uuid4(), hand=[], player_type=PlayerType.HUMAN, name=f"Player {i}"))
+                self.game_state.players.append(Player(image=None, x=self.ui_hands[i].center_x, y=self.ui_hands[i].center_y, player_id=uuid.uuid4(), hand=[], player_type=PlayerType.HUMAN, name=f"Player {i}"))
             else:
-                self.game_state.players.append(Player(image=None, x=0, y=0, player_id=uuid.uuid4(), hand=[], player_type=self.game_state.computer_difficulty, name=f"Player {i}"))
+                self.game_state.players.append(Player(image=None, x=self.ui_hands[i].center_x, y=self.ui_hands[i].center_y, player_id=uuid.uuid4(), hand=[], player_type=self.game_state.computer_difficulty, name=f"Player {i}"))
         # self.game_state.players = players
     
     # Finding the "real" first player index 
@@ -424,7 +424,7 @@ class playScreen(screenBase):
     def deal_hands(self):
         # Adding "flying cards" animation, using zip to match player with their hand position
         for player, hand in zip(self.game_state.players, self.ui_hands):
-            self.draw_and_animate_cards(number_of_cards=4, pos_x=hand.center_x, pos_y=hand.center_y, player=player)
+            self.draw_and_animate_cards(number_of_cards=4, player=player)
             
     
     def choose_start_player(self):
@@ -504,7 +504,7 @@ class playScreen(screenBase):
 
             while True:
                 if move == PlayerMove.DRAW:
-                    handle_action_draw_3(self.game_state, computer_player_decision)
+                    handle_action_draw_3(self.game_state, computer_player_decision, draw_animation=self.draw_and_animate_cards)
                     break
 
                 if move == PlayerMove.TAKE:
@@ -512,7 +512,7 @@ class playScreen(screenBase):
                     break
 
                 if move == PlayerMove.DRAW_ONE:
-                    handle_action_swap(self.game_state, computer_player_decision)
+                    handle_action_swap(self.game_state, computer_player_decision, draw_animation=self.draw_and_animate_cards)
                     break
 
                 if move == PlayerMove.DISCARD_VALID_CARDS:
@@ -602,7 +602,7 @@ class playScreen(screenBase):
 
                             while True:
                                 if move == PlayerMove.DRAW:
-                                    handle_action_draw_3(self.game_state, computer_player_decision)
+                                    handle_action_draw_3(self.game_state, computer_player_decision, draw_animation=self.draw_and_animate_cards)
                                     self.game_state.computer_playing_for_human = False
                                     break
 
@@ -612,7 +612,7 @@ class playScreen(screenBase):
                                     break
 
                                 if move == PlayerMove.DRAW_ONE:
-                                    handle_action_swap(self.game_state, computer_player_decision)
+                                    handle_action_swap(self.game_state, computer_player_decision, draw_animation=self.draw_and_animate_cards)
                                     self.game_state.computer_playing_for_human = False
                                     break
 
@@ -792,7 +792,7 @@ class playScreen(screenBase):
             # Calculating the distance between hand and a deck. sqrt(x**2 + y**2)
             # Then we empirically find a constant so that the hand is shown when the cards are arrived.
             distance = (hand.center_x - self.deck.rect.centerx)**2 + (hand.center_y - self.deck.rect.centery)**2
-            if pygame.time.get_ticks() - self.start_time > (distance)**0.5 * 1.35:
+            if pygame.time.get_ticks() - self.start_time > (distance)**0.5 / 1.1:
                 hand.draw(self.screen)
 
         # Prompting the user to steal if it's stealing (relevant for human player)

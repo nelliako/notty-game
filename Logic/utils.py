@@ -23,7 +23,7 @@ class TurnContext:
 
 # Action 1: draw up to 3 cards, constraint - cannot exceed 20 cards in hand & can be done once per turn
 
-def handle_action_draw_3(game_state: GameState, computer_player: playerDecision, TurnContext: TurnContext = None, ui_callback = None):
+def handle_action_draw_3(game_state: GameState, computer_player: playerDecision, TurnContext: TurnContext = None, ui_callback = None, draw_animation = None):
     number_of_cards = 0
     # Calculate max cards player can draw without exceeding 20
     space_in_hand = 20 - len(game_state.current_player.hand)
@@ -47,6 +47,9 @@ def handle_action_draw_3(game_state: GameState, computer_player: playerDecision,
         if (len(game_state.current_player.hand) + max_draw) <= 20:
             number_of_cards = computer_player.choose_number_of_card_to_draw(max_draw)
             game_state.current_player.draw(game_state.deck.draw_cards(number_of_cards=number_of_cards))
+            # Adding animation for a computer 
+            if draw_animation:
+                draw_animation(number_of_cards, game_state.current_player)
 
 
 #  Action 2: Steal a random card from an opponent; constraint - cannot exceed 20 cards in hand, can be done once per turn
@@ -115,7 +118,7 @@ def handle_action_steal(game_state: GameState, computer_player_decision: playerD
 
 # Action 3: draw 1 card, discard 1 card; constraints
 def handle_action_swap(game_state: GameState, computer_player_decision: playerDecision = None,
-                       context: TurnContext = None, ui_callback = None, skip_drawing: bool = False):
+                       context: TurnContext = None, ui_callback = None, skip_drawing: bool = False, draw_animation = None):
     # Has this action been done before?
     if context is not None and context.has_swapped_card:
         return
@@ -127,6 +130,9 @@ def handle_action_swap(game_state: GameState, computer_player_decision: playerDe
 
         # add drawn card to player hand
         game_state.current_player.take_card(card_drawn)
+        # Adding animation for a computer 
+        if draw_animation:
+            draw_animation(1, game_state.current_player)
 
     # Choose the card to discard when player is human
 

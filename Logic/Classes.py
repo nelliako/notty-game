@@ -151,6 +151,8 @@ class Player:
             self.rect.x = x
             self.rect.y = y
         self.on_hover = False
+        self.center_x = x
+        self.center_y = y
         self.is_selected = False
         self.player_id: uuid.UUID = player_id
         self.name = name
