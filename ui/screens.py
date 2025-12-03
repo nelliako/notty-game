@@ -1,6 +1,7 @@
 import pygame
 import sys
 import uuid
+import time
 from collections import deque
 
 from Logic.computerLogic.playerDecision import EASY
@@ -165,6 +166,11 @@ class playScreen(screenBase):
         if self.game_state.number_players == 3:
             self.player3_surf = pygame.image.load("ui/images/player3.png").convert_alpha()
         self.stateArrow_surf = pygame.image.load("ui/images/arrow.png").convert_alpha()
+        
+        # Create rectangles for player avatar positions (for stealing clicks)
+        self.player2_rect = pygame.Rect(600, 200, self.player2_surf.get_width(), self.player2_surf.get_height())
+        if self.game_state.number_players == 3:
+            self.player3_rect = pygame.Rect(230, 305, self.player3_surf.get_width(), self.player3_surf.get_height())
 
         deck_surf = pygame.image.load("ui/images/deck.png").convert_alpha()
         card_back_surf = pygame.image.load("ui/images/cardBack.png").convert_alpha()
@@ -225,6 +231,7 @@ class playScreen(screenBase):
         # Selection persistence and draw-order tracking
         self.card_states = {} # card_id -> selected(bool)
         self.last_hand_visuals = [] # list of (card_vis, logic_card, player)
+        self.selected_player_for_steal = None  
 
     def pause_game(self):
         self.is_paused = True
@@ -240,6 +247,11 @@ class playScreen(screenBase):
         self.available_cards_for_steal_or_trade = []
         self.is_stealing = False
         self.is_trading = False
+        self.selected_player_for_steal = None
+        # Reset all players' hide_hand flag
+        for player in [self.game_state.current_player] + list(self.game_state.players):
+            if player:
+                player.hide_hand = False
 
     def restart_game(self):
         self.start_time = pygame.time.get_ticks()
@@ -352,6 +364,29 @@ class playScreen(screenBase):
             return
         handle_action_discard_group(self.game_state, None)
 
+    def draw_hidden_hand_icon(self, player, hand):
+        hidden_img = self.deck.card_back
+        count = len(player.hand)
+        
+        #vertical player orientation - steal mode
+        if hand.orientation == "vertical":
+           
+            rotated_img = pygame.transform.rotate(hidden_img, -90)
+            spacing = -28  # Match vertical hand spacing (-18) + 10 extra pixels
+            starty = hand.center_y - (spacing * (count - 1)) / 2
+            x = hand.center_x
+            for i in range(count):
+                y = starty + i * spacing
+                self.screen.blit(rotated_img, (x, y))
+        else:
+            # Horizontal display (top player)
+            spacing = -28  # Match horizontal hand spacing (-18) + 10 extra pixels
+            startx = hand.center_x - (spacing * (count - 1)) / 2
+            y = hand.center_y
+            for i in range(count):
+                x = startx + i * spacing
+                self.screen.blit(hidden_img, (x, y))
+
     def activate_trading(self):
         if self.is_stealing:
             self.is_trading = False
@@ -370,8 +405,23 @@ class playScreen(screenBase):
         # Exiting the stealing mode if it was pressed again, the implication in the draw function: getting rid of the text in draw objects if the steal mode has been activated 
         if self.is_stealing:
             self.is_stealing = False
+            self.selected_player_for_steal = None
+            # Reset hide_hand flags when canceling steal
+            for player in [self.game_state.current_player] + list(self.game_state.players):
+                if player:
+                    player.hide_hand = False
             return
         self.is_stealing = True
+        self.selected_player_for_steal = None
+        
+        # For 2-player: Show card backs immediately when steal button is clicked
+        if self.game_state.number_players == 2:
+            all_players = [self.game_state.current_player] + list(self.game_state.players)
+            for player in all_players:
+                if player and player.player_id != self.game_state.current_player.player_id:
+                    player.hide_hand = True
+                    self.selected_player_for_steal = player
+                    break
     
     def trigger_end_turn(self):
         self.game_state.players.append(self.game_state.current_player)
@@ -557,10 +607,61 @@ class playScreen(screenBase):
         # TODO(Nellia): use logic from utils.py, it's not a good place to have this logic here.
         if event.type == pygame.MOUSEBUTTONDOWN and self.is_stealing:
             mouse_x, mouse_y = event.pos
-            for card_vis, player, card in self.available_cards_for_steal_or_trade:
-                if card_vis.contains_point(mouse_x, mouse_y):
-                    stolen_card = player.lose_card(random.randint(0, (len(player.hand)-1)))
+            
+            # For 3-player: Two-step process
+            if self.game_state.number_players == 3:
+               
+                if self.selected_player_for_steal is None:
+                    
+                    all_players = [self.game_state.current_player] + list(self.game_state.players)
+                    actual_first_player_index = self.find_first_player_index(all_players)
+                    rotated_players = all_players[actual_first_player_index:] + all_players[:actual_first_player_index]
+                    
+                    if self.player2_rect.collidepoint(mouse_x, mouse_y) and len(rotated_players) > 1:
+                        self.selected_player_for_steal = rotated_players[1]
+                        self.selected_player_for_steal.hide_hand = True
+                        return
+                    
+                    if self.game_state.number_players == 3 and self.player3_rect.collidepoint(mouse_x, mouse_y) and len(rotated_players) > 2:
+                        self.selected_player_for_steal = rotated_players[2]
+                        self.selected_player_for_steal.hide_hand = True
+                        return
+                        
+           
+                else:
+                  
+                    stolen_card = self.selected_player_for_steal.lose_card(random.randint(0, (len(self.selected_player_for_steal.hand)-1)))
                     self.game_state.current_player.take_card(stolen_card)
+                    
+                    
+                    self.draw_objects()
+                    pygame.display.update()
+                    
+                  
+                    time.sleep(1) # pause before flipping cards back
+                    
+                    self.selected_player_for_steal.hide_hand = False
+                    self.selected_player_for_steal = None
+                    self.game_state.chosen_player = None
+                    self.is_stealing = False
+                    self.done_moves.append(PlayerMove.TAKE)
+                    return
+            
+            else:
+
+                if self.selected_player_for_steal is not None:
+                    stolen_card = self.selected_player_for_steal.lose_card(random.randint(0, (len(self.selected_player_for_steal.hand)-1)))
+                    self.game_state.current_player.take_card(stolen_card)
+                    
+                 
+                    self.draw_objects()
+                    pygame.display.update()
+                    
+                 
+                    time.sleep(1)
+                    
+                    self.selected_player_for_steal.hide_hand = False
+                    self.selected_player_for_steal = None
                     self.game_state.chosen_player = None
                     self.is_stealing = False
                     self.done_moves.append(PlayerMove.TAKE)
@@ -724,9 +825,19 @@ class playScreen(screenBase):
         if self.game_state.current_player.name == "Player 1":
             self.screen.blit(self.stateArrow_surf, (620, 170))
         self.screen.blit(self.player2_surf, (600, 200))
-        # Showing 3rd avatar only if there are 3 players
+        
+        # 3 player (visual - steal mode)
         if self.game_state.number_players == 3:
             self.screen.blit(self.player3_surf, (230, 305))
+        
+        # Hover boxes - steal mode
+        if self.is_stealing and self.selected_player_for_steal is None:
+            mx, my = pygame.mouse.get_pos()
+            if self.player2_rect.collidepoint(mx, my):
+                pygame.draw.rect(self.screen, (255, 255, 0), self.player2_rect, 3)
+            if self.game_state.number_players == 3 and self.player3_rect.collidepoint(mx, my):
+                pygame.draw.rect(self.screen, (255, 255, 0), self.player3_rect, 3)
+        
         if self.game_state.current_player.name == "Player 2":
             self.screen.blit(self.stateArrow_surf, (250, 275))
 
@@ -752,13 +863,13 @@ class playScreen(screenBase):
 
                 hand = self.ui_hands[i]
                 hand.cards = []
+                if player.hide_hand:
+                    self.draw_hidden_hand_icon(player, hand)
+                    continue
+
                 for card_index, card in enumerate(player.hand):
                     card_vis = CardVisual(card.color.display_name, card.number, sprites)
-                    # If we are in a "steal" mode we need to remember cards we can steal and show them as "hovered"
-                    if self.is_stealing and player.player_id != self.game_state.current_player.player_id:
-                        card_vis.hovered = True
-                        self.available_cards_for_steal_or_trade.append((card_vis, player, card))
-
+                    
                     # If we are in the trading mode
                     if self.is_trading and player.player_id == self.game_state.current_player.player_id:
                         self.available_cards_for_steal_or_trade.append((card_vis, player, card))
@@ -766,7 +877,7 @@ class playScreen(screenBase):
                     selected_state = self.card_states.get(card.id, False)
                     card_vis.selected = selected_state
                     # Regular hover (only when not in steal mode)
-                    if not self.is_stealing:
+                    if not self.is_stealing and not self.is_trading:
                         if card_vis.contains_point(mx, my):
                             card_vis.hovered = True
                     hand = self.ui_hands[i]
@@ -798,8 +909,7 @@ class playScreen(screenBase):
 
         # Draw all hands once with final hover flags so overlays show without lifting
         for hand in self.ui_hands:
-            # Calculating the distance between hand and a deck. sqrt(x**2 + y**2)
-            # Then we empirically find a constant so that the hand is shown when the cards are arrived.
+           
             distance = (hand.center_x - self.deck.rect.centerx)**2 + (hand.center_y - self.deck.rect.centery)**2
             if pygame.time.get_ticks() - self.start_time > (distance)**0.5 / 1.1:
                 hand.draw(self.screen)
