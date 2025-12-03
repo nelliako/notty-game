@@ -98,10 +98,12 @@ class Deck:
     def __init__(self):
         self.cards = create_deck()
 
-    def shuffle_deck(self):
+    def shuffle_deck(self, trigger_ui=True):
         temp_list = list(self.cards)
         random.shuffle(temp_list)
         self.cards = deque(temp_list)
+        # Store reference to game_state if needed for flag
+        self._trigger_ui = trigger_ui
 
     def deal(self) -> List[Card]:
         cards_dealt: List[Card] = []
@@ -158,6 +160,7 @@ class Player:
         self.name = name
         self.hand: List[Card] = hand
         self.type: PlayerType = player_type
+        self.hide_hand = False
 
     def __repr__(self):
         return f"{self.player_id}"
@@ -214,6 +217,7 @@ class GameState:
         self.number_players = 1
         self.computer_difficulty = PlayerType.COMPUTER_EASY
         self.computer_playing_for_human = False
+        self.deck_shuffled = False  # Flag for UI to show shuffle animation
 
 
     def set_players(self, number):
@@ -229,5 +233,6 @@ class GameState:
         self.chosen_player = None
         self.players = deque()
         self.deck = Deck()
+        self.deck_shuffled = False
 
 

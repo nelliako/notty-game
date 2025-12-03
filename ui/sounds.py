@@ -15,6 +15,12 @@ class GameSound():
         
         self.lose_sound = pygame.mixer.Sound('ui/soundsFile/lose.mp3')
         self.lose_sound.set_volume(0.5)
+        
+        self.shuffle_sound = pygame.mixer.Sound('ui/soundsFile/shuffling.mp3')
+        self.shuffle_sound.set_volume(0.5)
+        
+        self.card_draw_sound = pygame.mixer.Sound('ui/soundsFile/card_draw.mp3')
+        self.card_draw_sound.set_volume(0.5)
 
         pygame.mixer.music.play(-1)  # loop
 
@@ -38,3 +44,9 @@ class GameSound():
     
     def playLose(self):
         self.lose_sound.play()
+    
+    def playShuffle(self):
+        self.shuffle_sound.play()
+    
+    def playCardDraw(self):
+        self.card_draw_sound.play()
