@@ -984,7 +984,7 @@ class playScreen(screenBase):
             self.speaker_button.update(self.screen)
 
         # To prevent cheating and bugs by ending the turn prematurely
-        if not self.is_trading:
+        if not self.is_trading and not self.is_stealing:
             self.end_turn.update(self.screen)
 
         for btn in self.draw_sub_buttons:
