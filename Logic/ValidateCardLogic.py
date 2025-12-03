@@ -61,8 +61,8 @@ def colours_identical(cards: List[Card]) -> list[Card] | None:
                 else:
                     break
 
-            # print(f"Number of Consecutive Numbers: {consecutive_numbers}")
-            if consecutive_numbers == len(sub)-1:
+                # print(consecutive_numbers)
+            if consecutive_numbers >= 3:
                 cards_sublist = []
                 for number in sub:
                     cards_sublist.append(colors_cards[color][number])
