@@ -187,6 +187,7 @@ def handle_action_discard_group(game_state: GameState, context: TurnContext = No
     if game_state.current_player.type != PlayerType.HUMAN and not game_state.computer_playing_for_human:
         valid_group = contains_valid_group(game_state.current_player.hand)
         if valid_group is not None:
+            print(f'You have discarded the following cards: {valid_group}')
             # player.discard_valid_cards(list())
             # Adding the removed card back to the deck
             game_state.current_player.discard_valid_cards(valid_group)
@@ -205,6 +206,7 @@ def handle_action_discard_group(game_state: GameState, context: TurnContext = No
         #     print("Selected cards must be a valid group.")
         valid_group = contains_valid_group(game_state.current_player.hand)
         if valid_group is not None:
+            print(f'You have discarded the following cards: {valid_group}')
             game_state.current_player.discard_valid_cards(valid_group)
             game_state.deck.add_cards(valid_group)
             game_state.deck.shuffle_deck()

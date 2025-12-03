@@ -22,15 +22,15 @@ class DrawOptions(Enum):
 
 
 class CardColor(Enum):
-    RED = ('red', Color(220, 20, 60, 255))
-    GREEN = ('green', Color(0, 168, 107, 255))
-    BLUE = ('blue', Color(0, 71, 171, 255))
-    BLACK = ('black', Color(0, 0, 0, 255))
-    YELLOW = ('yellow', Color(250, 218, 94, 255))
+    BLACK = ('black', 1)
+    BLUE = ('blue', 2)
+    GREEN = ('green', 3)
+    RED = ('red', 4)
+    YELLOW = ('yellow', 5)
 
-    def __init__(self, display_name, color):
+    def __init__(self, display_name, ordinal):
         self.display_name = display_name
-        self.color = color
+        self.ordinal = ordinal
 
 
 @dataclass
@@ -53,7 +53,7 @@ class Card:
     # TODO(Darron from Nellia): make this type hashable for colours_identical. 
 
     def __repr__(self):
-        return f"Card({self.color}, {self.number}, {self.id})"
+        return f"Card({self.color}, {self.number})"
 
     def __eq__(self, other):
         if not isinstance(other, Card):
@@ -201,6 +201,8 @@ class Player:
             self.hand.remove(
                 card)  # TODO Confirm if remove(card) only removes one instance of the card if there are two
 
+    def sort_cards(self):
+        self.hand.sort(key=lambda card: (card.color.value, card.number), reverse=True)
 
 class GameState:
     def __init__(self, players: Deque[Player], deck: Deck):

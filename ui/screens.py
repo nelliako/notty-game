@@ -548,7 +548,7 @@ class playScreen(screenBase):
         if len(self.game_state.current_player.hand) > 21 or (len(self.game_state.current_player.hand) == 21 and not self.is_trading):
             raise ValueError(f"{self.game_state.current_player.name}'s hand exceeds 20 cards!")
 
-        print(f"proces_event(): {self.game_state.current_player.name} Permissible moves: {self.permissible_moves}")
+        # print(f"proces_event(): {self.game_state.current_player.name} Permissible moves: {self.permissible_moves}")
         if self.game_state.current_player.type != PlayerType.HUMAN:
             computer_player_decision = get_computer_player_decision(game_state=self.game_state, moves=self.permissible_moves)
             if len(self.permissible_moves) != 0:
@@ -867,6 +867,7 @@ class playScreen(screenBase):
                     self.draw_hidden_hand_icon(player, hand)
                     continue
 
+                player.sort_cards()
                 for card_index, card in enumerate(player.hand):
                     card_vis = CardVisual(card.color.display_name, card.number, sprites)
                     
