@@ -46,10 +46,11 @@ def handle_action_draw_3(game_state: GameState, computer_player: playerDecision,
     else:
         if (len(game_state.current_player.hand) + max_draw) <= 20:
             number_of_cards = computer_player.choose_number_of_card_to_draw(max_draw)
-            game_state.current_player.draw(game_state.deck.draw_cards(number_of_cards=number_of_cards))
             # Adding animation for a computer 
             if draw_animation:
                 draw_animation(number_of_cards, game_state.current_player)
+            else:
+                game_state.current_player.draw(game_state.deck.draw_cards(number_of_cards=number_of_cards))
 
 
 #  Action 2: Steal a random card from an opponent; constraint - cannot exceed 20 cards in hand, can be done once per turn
@@ -124,15 +125,17 @@ def handle_action_swap(game_state: GameState, computer_player_decision: playerDe
         return
 
     if not skip_drawing:
-        # Drawing card from the deck and accessing it from the list
-        card_drawn = game_state.deck.draw_cards(1)[0]
-        print(f'You drew {card_drawn}')
-
-        # add drawn card to player hand
-        game_state.current_player.take_card(card_drawn)
-        # Adding animation for a computer 
         if draw_animation:
             draw_animation(1, game_state.current_player)
+        else:
+            # Drawing card from the deck and accessing it from the list
+            card_drawn = game_state.deck.draw_cards(1)[0]
+            print(f'You drew {card_drawn}')
+
+            # add drawn card to player hand
+            game_state.current_player.take_card(card_drawn)
+            # Adding animation for a computer
+
 
     # Choose the card to discard when player is human
 
