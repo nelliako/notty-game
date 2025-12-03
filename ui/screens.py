@@ -770,7 +770,7 @@ class playScreen(screenBase):
                     continue
                 if len(player.hand) == 0:
                     print(f'The winner is {player.name}')
-                    if player.type == PlayerType.HUMAN:
+                    if player.name == 'Player 0':
                         self.game_state.state = State.WON
                     else:
                         self.game_state.state = State.LOST
@@ -1062,7 +1062,7 @@ class playScreen(screenBase):
                             continue
                         if len(player.hand) == 0:
                             print(f'The winner is {player.name}')
-                            if player.type == PlayerType.HUMAN:
+                            if player.name == 'Player 0':
                                 self.game_state.state = State.WON
                             else:
                                 self.game_state.state = State.LOST
