@@ -161,6 +161,7 @@ def handle_action_swap(game_state: GameState, computer_player_decision: playerDe
         game_state.deck.add_cards([discarded_card])
         # Shuffling the deck
         game_state.deck.shuffle_deck()
+        game_state.deck_shuffled = True
         if context is not None:
             context.has_swapped_card = True
         return
@@ -176,6 +177,7 @@ def handle_action_swap(game_state: GameState, computer_player_decision: playerDe
         game_state.deck.add_cards([discarded_card])
         # Shuffling the deck
         game_state.deck.shuffle_deck()
+        game_state.deck_shuffled = True
         if context is not None:
             context.has_swapped_card = True
         return
@@ -194,6 +196,7 @@ def handle_action_discard_group(game_state: GameState, context: TurnContext = No
             game_state.deck.add_cards(valid_group)
             # Shuffling the deck
             game_state.deck.shuffle_deck()
+            game_state.deck_shuffled = True
             return True
         return False
     else:
@@ -210,6 +213,7 @@ def handle_action_discard_group(game_state: GameState, context: TurnContext = No
             game_state.current_player.discard_valid_cards(valid_group)
             game_state.deck.add_cards(valid_group)
             game_state.deck.shuffle_deck()
+            game_state.deck_shuffled = True
             return True
         return False
 

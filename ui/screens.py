@@ -3,6 +3,7 @@ import sys
 import uuid
 import time
 from collections import deque
+import gif_pygame
 
 from Logic.computerLogic.playerDecision import EASY
 from ui.button import Button
@@ -181,6 +182,8 @@ class playScreen(screenBase):
         if self.game_state.number_players == 3:
             self.player3_surf = pygame.image.load("ui/images/player3.png").convert_alpha()
         self.stateArrow_surf = pygame.image.load("ui/images/arrow.png").convert_alpha()
+        self.discard_m_surf = pygame.image.load("ui/images/discard_m.png").convert_alpha()
+        self.steal_m_surf = pygame.image.load("ui/images/steal_m.png").convert_alpha()
         
         # Create rectangles for player avatar positions (for stealing clicks)
         self.player2_rect = pygame.Rect(600, 200, self.player2_surf.get_width(), self.player2_surf.get_height())
@@ -192,6 +195,12 @@ class playScreen(screenBase):
         deck_center_x = int(1280 * 0.80)
         deck_center_y = 380
         self.deck = UIDeck(deck_surf, deck_center_x, deck_center_y, card_back_surf)
+      
+        self.shuffle_gif = gif_pygame.load("ui/images/shuffle.gif")
+        
+        # Shuffle animation state
+        self.showing_shuffle_animation = False
+        self.shuffle_animation_start_time = 0
 
         orangeButton_surf = pygame.image.load("ui/buttonImages/orangeButton.png").convert_alpha()
         orangeButton_surf = pygame.transform.scale(orangeButton_surf, (100, 50))
@@ -217,7 +226,7 @@ class playScreen(screenBase):
         # FIXED UI POSITIONS FOR UP TO 3 PLAYERS
         self.hand_bottom = PlayerHand(600, 580, -18, "horizontal")   # Player 0 - Bottom
         self.hand_top    = PlayerHand(600, 50, -18, "horizontal")    # Player 1 - Top
-        self.hand_left   = PlayerHand(100, 350, -18, "vertical")     # Player 2 - Left
+        self.hand_left   = PlayerHand(100, 300, -18, "vertical")     # Player 2 - Left
         self.ui_hands = []
         self.ui_hands.append(self.hand_bottom)
         if self.game_state.number_players >= 2:
@@ -254,7 +263,8 @@ class playScreen(screenBase):
         # Selection persistence and draw-order tracking
         self.card_states = {} # card_id -> selected(bool)
         self.last_hand_visuals = [] # list of (card_vis, logic_card, player)
-        self.selected_player_for_steal = None  
+        self.selected_player_for_steal = None
+        self.shuffle_sound_played = False  # Flag to play shuffle sound only once
 
     def toggle_sound(self):
         if self.is_muted:
@@ -279,6 +289,7 @@ class playScreen(screenBase):
         self.is_stealing = False
         self.is_trading = False
         self.selected_player_for_steal = None
+        self.shuffle_sound_played = False
         # Reset all players' hide_hand flag
         for player in [self.game_state.current_player] + list(self.game_state.players):
             if player:
@@ -399,7 +410,12 @@ class playScreen(screenBase):
         hidden_img = self.deck.card_back
         count = len(player.hand)
         
-        #vertical player orientation - steal mode
+      
+        if not self.shuffle_sound_played:
+            self.sound.playShuffle()
+            self.shuffle_sound_played = True
+        
+      
         if hand.orientation == "vertical":
            
             rotated_img = pygame.transform.rotate(hidden_img, -90)
@@ -487,6 +503,7 @@ class playScreen(screenBase):
     def draw_and_animate_cards(self, number_of_cards, player):
         cards = self.game_state.deck.draw_cards(number_of_cards=number_of_cards)
         player.draw(cards)
+        self.sound.playCardDraw()  
         for i in range(number_of_cards):
             # Overlay "trick" to show many cards being drawn from the deck
             self.deck.start_draw_animation(player.center_x + i * 20, player.center_y, speed=20.0)
@@ -663,6 +680,7 @@ class playScreen(screenBase):
                   
                     stolen_card = self.selected_player_for_steal.lose_card(random.randint(0, (len(self.selected_player_for_steal.hand)-1)))
                     self.game_state.current_player.take_card(stolen_card)
+                    self.sound.playCardDraw()  
                     
                     
                     self.draw_objects()
@@ -683,6 +701,7 @@ class playScreen(screenBase):
                 if self.selected_player_for_steal is not None:
                     stolen_card = self.selected_player_for_steal.lose_card(random.randint(0, (len(self.selected_player_for_steal.hand)-1)))
                     self.game_state.current_player.take_card(stolen_card)
+                    self.sound.playCardDraw()  
                     
                  
                     self.draw_objects()
@@ -883,6 +902,42 @@ class playScreen(screenBase):
 
         self.deck.draw_deck(self.screen)
         self.deck.update_and_draw_animations(self.screen)
+        
+       
+        if self.game_state.deck_shuffled and not self.showing_shuffle_animation:
+            self.showing_shuffle_animation = True
+            self.shuffle_animation_start_time = pygame.time.get_ticks()
+            self.game_state.deck_shuffled = False
+            self.sound.playShuffle() 
+            
+        
+        # Shuffle animation
+        if self.showing_shuffle_animation:
+            time_passed = pygame.time.get_ticks() - self.shuffle_animation_start_time
+            
+            if time_passed < 2000:
+              
+                original_width = self.shuffle_gif.get_width()
+                original_height = self.shuffle_gif.get_height()
+                scaled_width = int(original_width * 0.8)
+                scaled_height = int(original_height * 0.8)
+                
+              
+                x_position = self.deck.rect.centerx - scaled_width // 2
+                y_position = self.deck.rect.top - scaled_height - 10
+                
+             #gif bg 
+                circle_radius = max(scaled_width, scaled_height) // 2 + 3
+                circle_center = (self.deck.rect.centerx, y_position + scaled_height // 2)
+                pygame.draw.circle(self.screen, (255, 255, 255), circle_center, circle_radius)
+                
+                # Render GIF on top
+                temp_surface = pygame.Surface((original_width, original_height), pygame.SRCALPHA)
+                self.shuffle_gif.render(temp_surface, (0, 0))
+                scaled_surface = pygame.transform.scale(temp_surface, (scaled_width, scaled_height))
+                self.screen.blit(scaled_surface, (x_position, y_position))
+            else:
+                self.showing_shuffle_animation = False
 
         sprites = CardSprites("cardsImages")
         for hand in self.ui_hands:
@@ -893,7 +948,7 @@ class playScreen(screenBase):
         mx, my = pygame.mouse.get_pos()
 
         all_players = [self.game_state.current_player] + list(self.game_state.players)
-        # Finding the "real" first player - who began playing the first
+        # Finding the "real" first player
         actual_first_player_index = self.find_first_player_index(all_players)
         self.last_hand_visuals = []
         # Rotating so that the "real" first player is always at the bottom
@@ -914,7 +969,7 @@ class playScreen(screenBase):
                     # If we are in the trading mode
                     if self.is_trading and player.player_id == self.game_state.current_player.player_id:
                         self.available_cards_for_steal_or_trade.append((card_vis, player, card))
-                    # Apply persistent selected state
+                  
                     selected_state = self.card_states.get(card.id, False)
                     card_vis.selected = selected_state
                     # Regular hover (only when not in steal mode)
@@ -957,13 +1012,20 @@ class playScreen(screenBase):
 
         # Prompting the user to steal if it's stealing (relevant for human player)
         if self.is_stealing:
-            text = self.button_font.render("SELECT A PLAYER TO STEAL A RANDOM CARD", True, (255, 0, 0))
-            self.screen.blit(text, (475, 290))
+          
+            if self.selected_player_for_steal is None:
+                pygame.draw.rect(self.screen, (255, 255, 0), self.player2_rect, 6)
+                if self.game_state.number_players == 3 and self.player3_rect:
+                    pygame.draw.rect(self.screen, (255, 255, 0), self.player3_rect, 6)
+            
+            img_x = 640 - self.steal_m_surf.get_width() // 2
+            img_y = 385
+            self.screen.blit(self.steal_m_surf, (img_x, img_y))
 
         if self.is_trading:
-            # There should be a card appearing on the screen drawn from the deck 
-            text = self.button_font.render("DISCARD ANY CARD FROM YOUR HAND", True, (255, 0, 0))
-            self.screen.blit(text, (475, 290))
+            img_x = 640 - self.discard_m_surf.get_width() // 2
+            img_y = 385 
+            self.screen.blit(self.discard_m_surf, (img_x, img_y))
 
         # Drawing buttons for permissible moves
         if PlayerMove.DRAW in self.permissible_moves:
