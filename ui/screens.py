@@ -306,11 +306,22 @@ class playScreen(screenBase):
 
     def navigate_to_menu_screen(self):
         self.game_state.reset_state()
-        return menuScreen(self.screen, self.game_state), None
+        return menuScreen(self.screen, self.game_state)
 
     def play_for_me_button(self):
-        self.game_state.computer_playing_for_human = True
-        return None, EASY(self.game_state, self.permissible_moves)
+        if self.game_state.current_player.type != PlayerType.HUMAN:
+            return
+        # Pretend we are a computer
+        self.game_state.current_player.type = self.game_state.computer_difficulty
+        # Doing a computer turn
+        if not self.computer_turn():
+            # Somebody won, do not pass the turn to the next.
+            self.game_state.current_player.type = PlayerType.HUMAN
+            return
+        # Returning the state back to human
+        self.game_state.current_player.type = PlayerType.HUMAN
+        self.trigger_end_turn()
+        return
 
     #/guide
     def load_guide_text(self):
@@ -459,6 +470,8 @@ class playScreen(screenBase):
                     player.hide_hand = False
             return
         self.is_stealing = True
+        # To prevent subbuttons appearing after stealing was activated
+        self.draw_sub_buttons = []
         self.selected_player_for_steal = None
         
         # For 2-player: Show card backs immediately when steal button is clicked
@@ -471,10 +484,19 @@ class playScreen(screenBase):
                     break
     
     def trigger_end_turn(self):
-        self.game_state.players.append(self.game_state.current_player)
-        self.game_state.current_player = self.game_state.players.popleft()
-        self.reset_state()
-        self.permissible_moves = get_permissible_moves(self.game_state)
+        pass_to_the_next = True
+        # We can do recursion on itself after computer turn but we eliminate recursion with a flag and a while loop
+        while pass_to_the_next:
+            self.game_state.players.append(self.game_state.current_player)
+            self.game_state.current_player = self.game_state.players.popleft()
+            self.reset_state()
+            self.permissible_moves = get_permissible_moves(self.game_state)
+            if self.game_state.current_player.type != PlayerType.HUMAN:
+                # If computer_turn returns true (if computer ended its turn and no one wins) -> we pass the turn to the next player (human or computer)
+                # If computer_turn returns false - game stops (somebody won)
+                pass_to_the_next = self.computer_turn()
+            else:
+                pass_to_the_next = False
 
     def show_draw_options(self):
         if self.is_trading:
@@ -495,6 +517,9 @@ class playScreen(screenBase):
             self.draw_sub_buttons.append(btn)
 
     def execute_draw(self, number_of_cards): #added this to check functionality of animation
+        # to prevent the ability to activate stealing/trading if draw subbutons are active
+        if self.is_stealing or self.is_trading:
+            return
         self.draw_and_animate_cards(number_of_cards, player=self.game_state.current_player)
         self.draw_sub_buttons = []
         self.done_moves.append(PlayerMove.DRAW)
@@ -561,11 +586,6 @@ class playScreen(screenBase):
 
         # print(f"Game State Deck size: {len(self.game_state.deck.cards)}")
 
-        # Calculating all available moves
-        self.permissible_moves = get_permissible_moves(self.game_state)
-        for move in self.done_moves:
-            if move in self.permissible_moves:
-                self.permissible_moves.remove(move)
 
 
         total_cards = list(self.game_state.deck.cards)
@@ -593,66 +613,12 @@ class playScreen(screenBase):
             print("[Warning] Cards in deck exceeds 90 cards! Continuing without raising.")
 
         # print(f"Game state Current Player {self.game_state.current_player.name} Hand Size: {len(self.game_state.current_player.hand)}")
-        if len(self.game_state.current_player.hand) > 21 or (len(self.game_state.current_player.hand) == 21 and not self.is_trading):
+        if self.game_state.current_player is not None and (len(self.game_state.current_player.hand) > 21 or (len(self.game_state.current_player.hand) == 21 and not self.is_trading)):
             raise ValueError(f"{self.game_state.current_player.name}'s hand exceeds 20 cards!")
 
         # print(f"proces_event(): {self.game_state.current_player.name} Permissible moves: {self.permissible_moves}")
-        if self.game_state.current_player.type != PlayerType.HUMAN:
-            computer_player_decision = get_computer_player_decision(game_state=self.game_state, moves=self.permissible_moves)
-            if len(self.permissible_moves) != 0:
-                move = computer_player_decision.choose()
-            else:
-                raise ValueError("[Warning] Permissible moves cannot be empty!")
-            print(f"{self.game_state.current_player.name} chose move: {move}")
-
-            # Getting rid of the chosen buttons when computer player is playing (if it's not a discard button)
-            if move in [PlayerMove.DRAW, PlayerMove.TAKE, PlayerMove.DRAW_ONE]:
-                self.done_moves.append(move)
-
-            while True:
-                if move == PlayerMove.DRAW:
-                    handle_action_draw_3(self.game_state, computer_player_decision, draw_animation=self.draw_and_animate_cards)
-                    break
-
-                if move == PlayerMove.TAKE:
-                    handle_action_steal(self.game_state, computer_player_decision)
-                    break
-
-                if move == PlayerMove.DRAW_ONE:
-                    handle_action_swap(self.game_state, computer_player_decision, draw_animation=self.draw_and_animate_cards)
-                    break
-
-                if move == PlayerMove.DISCARD_VALID_CARDS:
-                    handle_action_discard_group(self.game_state)
-                    break
-
-                if move == PlayerMove.END_TURN or move == PlayerMove.PASS:
-                    self.trigger_end_turn()
-                    break
-
-        if not all_hands_non_empty(self.game_state):
-            # TODO replace with a function & return winning player
-            for player in [self.game_state.current_player] + list(self.game_state.players):
-                if player is None:
-                    continue
-                if len(player.hand) == 0:
-                    print(f'The winner is {player.name}')
-                    if player.type == PlayerType.HUMAN:
-                        self.game_state.state = State.WON
-                    else:
-                        self.game_state.state = State.LOST
-                    is_endgame = True
-                    break
-
-            self.game_state.reset_state()
-            # TODO replace with Game Over Screen
-            current_screen = EndScreen(self.screen, self.game_state)
-            print(f"current screen:  {current_screen}")
-            self.close = True
-            return
 
         # Stealing
-        # TODO(Nellia): use logic from utils.py, it's not a good place to have this logic here.
         if event.type == pygame.MOUSEBUTTONDOWN and self.is_stealing:
             mouse_x, mouse_y = event.pos
             
@@ -756,45 +722,12 @@ class playScreen(screenBase):
             for button in active_buttons:
                 if button.rect.collidepoint(event.pos):
                     try:
-                        screen, computer_player_decision = button.handle_event(event)
+                        screen = button.handle_event(event)
                         if screen is not None:
                             current_screen = screen
                             self.close = True
                             return
-                        if computer_player_decision is not None and self.game_state.computer_playing_for_human:
-                            move = computer_player_decision.choose()
-                            print(f"On behalf of {self.game_state.current_player.name}, the computer chose move: {move}")
-
-                            # Getting rid of the chosen buttons when computer player is playing (if it's not a discard button)
-                            if move in [PlayerMove.DRAW, PlayerMove.TAKE, PlayerMove.DRAW_ONE]:
-                                self.done_moves.append(move)
-
-                            while True:
-                                if move == PlayerMove.DRAW:
-                                    handle_action_draw_3(self.game_state, computer_player_decision, draw_animation=self.draw_and_animate_cards)
-                                    self.game_state.computer_playing_for_human = False
-                                    break
-
-                                if move == PlayerMove.TAKE:
-                                    handle_action_steal(self.game_state, computer_player_decision)
-                                    self.game_state.computer_playing_for_human = False
-                                    break
-
-                                if move == PlayerMove.DRAW_ONE:
-                                    handle_action_swap(self.game_state, computer_player_decision, draw_animation=self.draw_and_animate_cards)
-                                    self.game_state.computer_playing_for_human = False
-                                    break
-
-                                if move == PlayerMove.DISCARD_VALID_CARDS:
-                                    handle_action_discard_group(self.game_state)
-                                    self.game_state.computer_playing_for_human = False
-                                    break
-
-                                if move == PlayerMove.END_TURN or move == PlayerMove.PASS:
-                                    self.game_state.computer_playing_for_human = False
-                                    self.trigger_end_turn()
-                                    break
-                            return
+                       
                     except Exception as e:
                         return
                     return
@@ -900,6 +833,10 @@ class playScreen(screenBase):
         if self.game_state.current_player.name == "Player 2":
             self.screen.blit(self.stateArrow_surf, (250, 275))
 
+        self.permissible_moves = get_permissible_moves(self.game_state)
+        for move in self.done_moves:
+            if move in self.permissible_moves:
+                self.permissible_moves.remove(move)
         self.deck.draw_deck(self.screen)
         self.deck.update_and_draw_animations(self.screen)
         
@@ -1062,7 +999,81 @@ class playScreen(screenBase):
         if self.showing_guide:
             self.draw_guide()
             return
+        
+    # Ensuring computer takes turns without the need to trigger any events
+    # Takes a full computer turn
+    def computer_turn(self):
+        global current_screen
 
+        # This is to make current player cursor (and other changes) visible 
+        self.update_objects()
+        self.draw_objects()
+        pygame.display.update()
+
+        if self.game_state.current_player.type != PlayerType.HUMAN:
+            while True:
+                # Wait for animations to finish before starting the next computer player move
+                # Comment full if/else block if want to test all computers playing against each other
+                if len(self.deck.animations) > 0:
+                    self.update_objects()
+                    self.draw_objects()
+                    pygame.display.update()
+                    continue
+                # Wait for 200 msec for human eyes to understand the computer moves
+                else:
+                    pygame.time.wait(200)
+                self.permissible_moves = get_permissible_moves(self.game_state)
+                for move in self.done_moves:
+                    if move in self.permissible_moves:
+                        self.permissible_moves.remove(move)
+
+                computer_player_decision = get_computer_player_decision(game_state=self.game_state, moves=self.permissible_moves)
+                if len(self.permissible_moves) != 0:
+                    move = computer_player_decision.choose()
+                else:
+                    raise ValueError("[Warning] Permissible moves cannot be empty!")
+                print(f"{self.game_state.current_player.name} chose move: {move}")
+
+                # Getting rid of the chosen buttons when computer player is playing (if it's not a discard button)
+                if move in [PlayerMove.DRAW, PlayerMove.TAKE, PlayerMove.DRAW_ONE]:
+                    self.done_moves.append(move)
+                    self.update_objects()
+                    self.draw_objects()
+                    pygame.display.update()
+  
+                if move == PlayerMove.DRAW:
+                    handle_action_draw_3(self.game_state, computer_player_decision, draw_animation=self.draw_and_animate_cards)
+
+                if move == PlayerMove.TAKE:
+                    handle_action_steal(self.game_state, computer_player_decision)
+
+                if move == PlayerMove.DRAW_ONE:
+                    handle_action_swap(self.game_state, computer_player_decision, draw_animation=self.draw_and_animate_cards)
+                
+                if move == PlayerMove.DISCARD_VALID_CARDS:
+                    handle_action_discard_group(self.game_state)
+
+                if move == PlayerMove.END_TURN or move == PlayerMove.PASS:
+                    return True
+
+                if not all_hands_non_empty(self.game_state):
+                    for player in [self.game_state.current_player] + list(self.game_state.players):
+                        if player is None:
+                            continue
+                        if len(player.hand) == 0:
+                            print(f'The winner is {player.name}')
+                            if player.type == PlayerType.HUMAN:
+                                self.game_state.state = State.WON
+                            else:
+                                self.game_state.state = State.LOST
+                            is_endgame = True
+                            break
+
+                    self.game_state.reset_state()
+                    current_screen = EndScreen(self.screen, self.game_state)
+                    print(f"current screen:  {current_screen}")
+                    self.close = True
+                    return False
 
 class OptionSelectScreen(screenBase):
     def __init__(self, screen, game_state: GameState):
