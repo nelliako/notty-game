@@ -81,24 +81,24 @@ class EASY(playerDecision):
 
 class MEDIUM(playerDecision):
     #CALIBRATION CONSTANTS
-    POTENTIAL_GROUP_LENGTH = 2
-    COLORS_POTENTIAL_GROUP_LENGTH = POTENTIAL_GROUP_LENGTH
-    NUMBERS_POTENTIAL_GROUP_LENGTH = POTENTIAL_GROUP_LENGTH +1
-    COLOR_MEMBERSHIP_REWARD = 3
-    NUMBER_MEMBERSHIP_REWARD = 3
-    NON_MEMBERSHIP_PENALTY = 0.05
+    POTENTIAL_GROUP_LENGTH = 2 
+    COLORS_POTENTIAL_GROUP_LENGTH = POTENTIAL_GROUP_LENGTH # almost valid color group length
+    NUMBERS_POTENTIAL_GROUP_LENGTH = POTENTIAL_GROUP_LENGTH +1 #almost valid number .....
+    COLOR_MEMBERSHIP_REWARD = 2 
+    NUMBER_MEMBERSHIP_REWARD = 2
+    NON_MEMBERSHIP_PENALTY = 0.03
     DUPLICATE_RETENTION_VALUATION_FACTOR = 0.5
     MAX_HAND_SIZE = 20
-    MIN_HAND_THRESHOLD = 12
-    MAX_HAND_THRESHOLD = 17
+    MIN_HAND_THRESHOLD = 9
+    MAX_HAND_THRESHOLD = 18
     LOW_WEIGHT_THRESHOLD = 2
-    CARD_NUMBER_MIN = 1
-    CARD_NUMBER_MAX = 9
-    MOST_USELESS_TO_NUMBER_VALUE=-200
-    MOST_USELESS_TO_COLOR_VALUE= -200
+    MOST_USELESS_TO_NUMBER_VALUE=-0.8
+    MOST_USELESS_TO_COLOR_VALUE= -0.8
 
-    DEBUG = False
+    #DEBUG = False
     pause = False
+    DEBUG = True
+    #pause = True
 
     def __init__(self, game_state: GameState, valid_moves):
         super().__init__(game_state)
@@ -267,10 +267,8 @@ class MEDIUM(playerDecision):
 
     #Core logic for player 'MEDIUM'
     def choose(self):
-        valid_group = self.get_discard_group() # Get list of a single Valid Group in current hand 
-        
-        
-        # INIT SOME VALUES
+        valid_group = self.get_discard_group() # single valid group
+        # init basic valuEs
         current_hand = self.game_state.current_player.hand #getting current cards in current hand : Cards
         hand_size = len(current_hand)
         weights=self.get_decisionWeights(current_hand) # compute and fetch weights for current hand 
@@ -286,13 +284,17 @@ class MEDIUM(playerDecision):
             print("-------max weight in hand: ",max_weight_in_hand)
             #print("-------weights: ",weights)
             print("-------valid groups: ",valid_group)
+            print()
+            print(self.available_moves)
             if valid_group and self.pause: input("Press enter to Continue...")
         #END OF DEBUG AREA
+
+        #DISCARD ALWAYS
         if valid_group!=None:
             return PlayerMove.DISCARD_VALID_CARDS
         
 
-        # MAIN BLOCK
+        # main--------------------------------------------
 
         #hand too big
         if hand_size >= hand_threshold and PlayerMove.DRAW_ONE in self.available_moves: 
@@ -300,11 +302,10 @@ class MEDIUM(playerDecision):
 
         #rebuild if hand too small : gets stuck at 1 otherwise
         elif (hand_size <= 4 or max_weight_in_hand <= 2) and PlayerMove.DRAW in self.available_moves:
-            # Aggressive draw when desperate: 3 cards if hand <= 2, else 1-2 based on weakness
             if hand_size == 1 or max_weight_in_hand<0:
                 self.draw_N_value = 3  # max draw
-            elif max_weight_in_hand <= 1:
-                self.draw_N_value = 2  # Very weak hand
+            elif max_weight_in_hand <= 1: # Very weak hand
+                self.draw_N_value = 2 
             else:
                 self.draw_N_value = 1
             return PlayerMove.DRAW
@@ -361,7 +362,7 @@ class MEDIUM(playerDecision):
                     for n_draw in range(1, max_draw + 1):
                         # Probability of getting at least one target card in n draws
                         prob_draw_n = 1 - (((deck_size - deck_target_count) / deck_size) ** n_draw)
-                        # update weight by concentration ratio
+                        #weight by concentration ratio
                         deck_concentration = deck_target_count / deck_size
                         weighted_score = prob_draw_n * deck_concentration
                         draw_options.append((n_draw, prob_draw_n, deck_concentration, weighted_score))
@@ -419,21 +420,17 @@ class MEDIUM(playerDecision):
         duplicate_cards_valuation_factor = self.DUPLICATE_RETENTION_VALUATION_FACTOR
         
         temp = []
-        #unpacking the weights dict for ease of use
+        #unpacking the weights dict
         for index, each_card in enumerate(current_hand):
             if each_card in weights:
                 sum_PG_weights = weights[each_card][0] +weights[each_card][1]
                 duplicity = weights[each_card][2]
                 temp.append((sum_PG_weights, duplicity, index))
-
-        # Prioritize discarding low-value duplicates
         duplicates = [c for c in temp if (c[1] > 1 and c[0] <= duplicate_cards_valuation_factor)]
         
         if duplicates:
-            # Among duplicates, discard the one with lowest weight, then highest duplicity
             return min(duplicates, key=lambda x: (x[0], -x[1]))[2]
         else:
-            # No low-value duplicates - discard card with absolute lowest weight
             return min(temp, key=lambda x: x[0])[2] if temp else 0
 
 
