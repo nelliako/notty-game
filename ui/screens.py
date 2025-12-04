@@ -313,6 +313,8 @@ class playScreen(screenBase):
     def play_for_me_button(self):
         if self.game_state.current_player.type != PlayerType.HUMAN:
             return
+        if self.is_trading or self.is_stealing:
+           return
         # Pretend we are a computer
         #self.game_state.current_player.type = self.game_state.computer_difficulty
         self.game_state.current_player.type = PlayerType.COMPUTER_HARD
@@ -970,7 +972,7 @@ class playScreen(screenBase):
         # Drawing buttons for permissible moves
         if PlayerMove.DRAW in self.permissible_moves:
             self.draw_button.update(self.screen)
-        elif PlayerMove.DRAW in self.done_moves:
+        else:# PlayerMove.DRAW in self.done_moves:
             # Disabled button
             disabled_x = 460 - self.disabled_button_surf.get_width() // 2
             disabled_y = 350 - self.disabled_button_surf.get_height() // 2
@@ -981,9 +983,9 @@ class playScreen(screenBase):
             text_y = 350 - text_surf.get_height() // 2
             self.screen.blit(text_surf, (text_x, text_y))
             
-        if PlayerMove.TAKE in self.permissible_moves:
+        if PlayerMove.TAKE in self.permissible_moves and not self.is_stealing:
             self.steal_button.update(self.screen)
-        elif PlayerMove.TAKE in self.done_moves:
+        else: #PlayerMove.TAKE in self.done_moves
             # Disabled button 
             disabled_x = 580 - self.disabled_button_surf.get_width() // 2
             disabled_y = 350 - self.disabled_button_surf.get_height() // 2
@@ -994,10 +996,10 @@ class playScreen(screenBase):
             text_y = 350 - text_surf.get_height() // 2
             self.screen.blit(text_surf, (text_x, text_y))
 
-        # This is because we need to get rid of the button straight after we entered the mode to avoid cheating
+        # This is because we need to get disable the button straight after we entered the mode to avoid cheating
         if PlayerMove.DRAW_ONE in self.permissible_moves and not self.is_trading:
             self.trade_button.update(self.screen)
-        elif PlayerMove.DRAW_ONE in self.done_moves:
+        else: #PlayerMove.DRAW_ONE in self.done_moves or self.is_trading:
             
             disabled_x = 700 - self.disabled_button_surf.get_width() // 2
             disabled_y = 350 - self.disabled_button_surf.get_height() // 2
