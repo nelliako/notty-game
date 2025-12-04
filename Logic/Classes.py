@@ -6,7 +6,6 @@ from enum import Enum, auto
 from typing import List, Deque
 
 import pygame
-from pygame import Color
 
 
 class State(Enum):
