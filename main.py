@@ -34,6 +34,6 @@ from ui.see_cards import see_cards
 if __name__ == '__main__':
     # Choose one entry point to run by default
     # see_cards()
-    #see_screens()
+    see_screens()
     # run_game()
-    game_loop()
+    #game_loop()

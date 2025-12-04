@@ -184,6 +184,8 @@ class playScreen(screenBase):
         self.stateArrow_surf = pygame.image.load("ui/images/arrow.png").convert_alpha()
         self.discard_m_surf = pygame.image.load("ui/images/discard_m.png").convert_alpha()
         self.steal_m_surf = pygame.image.load("ui/images/steal_m.png").convert_alpha()
+        self.disabled_button_surf = pygame.image.load("ui/buttonImages/disabled_button.png").convert_alpha()
+        self.disabled_button_surf = pygame.transform.scale(self.disabled_button_surf, (100, 50))
         
         # Create rectangles for player avatar positions (for stealing clicks)
         self.player2_rect = pygame.Rect(600, 200, self.player2_surf.get_width(), self.player2_surf.get_height())
@@ -968,11 +970,43 @@ class playScreen(screenBase):
         # Drawing buttons for permissible moves
         if PlayerMove.DRAW in self.permissible_moves:
             self.draw_button.update(self.screen)
+        elif PlayerMove.DRAW in self.done_moves:
+            # Disabled button
+            disabled_x = 460 - self.disabled_button_surf.get_width() // 2
+            disabled_y = 350 - self.disabled_button_surf.get_height() // 2
+            self.screen.blit(self.disabled_button_surf, (disabled_x, disabled_y))
+          
+            text_surf = self.button_font.render("Draw", True, (132, 132, 132))
+            text_x = 460 - text_surf.get_width() // 2
+            text_y = 350 - text_surf.get_height() // 2
+            self.screen.blit(text_surf, (text_x, text_y))
+            
         if PlayerMove.TAKE in self.permissible_moves:
             self.steal_button.update(self.screen)
+        elif PlayerMove.TAKE in self.done_moves:
+            # Disabled button 
+            disabled_x = 580 - self.disabled_button_surf.get_width() // 2
+            disabled_y = 350 - self.disabled_button_surf.get_height() // 2
+            self.screen.blit(self.disabled_button_surf, (disabled_x, disabled_y))
+          
+            text_surf = self.button_font.render("Steal", True, (132, 132, 132))
+            text_x = 580 - text_surf.get_width() // 2
+            text_y = 350 - text_surf.get_height() // 2
+            self.screen.blit(text_surf, (text_x, text_y))
+
         # This is because we need to get rid of the button straight after we entered the mode to avoid cheating
         if PlayerMove.DRAW_ONE in self.permissible_moves and not self.is_trading:
             self.trade_button.update(self.screen)
+        elif PlayerMove.DRAW_ONE in self.done_moves:
+            
+            disabled_x = 700 - self.disabled_button_surf.get_width() // 2
+            disabled_y = 350 - self.disabled_button_surf.get_height() // 2
+            self.screen.blit(self.disabled_button_surf, (disabled_x, disabled_y))
+          
+            text_surf = self.button_font.render("Trade", True, (132, 132, 132))
+            text_x = 700 - text_surf.get_width() // 2
+            text_y = 350 - text_surf.get_height() // 2
+            self.screen.blit(text_surf, (text_x, text_y))
 
         self.discard_button.update(self.screen)
         self.playForMe_button.update(self.screen)
