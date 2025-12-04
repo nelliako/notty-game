@@ -37,5 +37,3 @@ if __name__ == '__main__':
     #see_screens()
     # run_game()
     game_loop()
-
-    
