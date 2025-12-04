@@ -84,10 +84,10 @@ class MEDIUM(playerDecision):
     POTENTIAL_GROUP_LENGTH = 2
     COLORS_POTENTIAL_GROUP_LENGTH = POTENTIAL_GROUP_LENGTH
     NUMBERS_POTENTIAL_GROUP_LENGTH = POTENTIAL_GROUP_LENGTH +1
-    COLOR_MEMBERSHIP_REWARD = 2
-    NUMBER_MEMBERSHIP_REWARD = 2
+    COLOR_MEMBERSHIP_REWARD = 3
+    NUMBER_MEMBERSHIP_REWARD = 3
     NON_MEMBERSHIP_PENALTY = 0.05
-    DUPLICATE_RETENTION_VALUATION_FACTOR = 0.4
+    DUPLICATE_RETENTION_VALUATION_FACTOR = 0.5
     MAX_HAND_SIZE = 20
     MIN_HAND_THRESHOLD = 12
     MAX_HAND_THRESHOLD = 17
@@ -160,12 +160,12 @@ class MEDIUM(playerDecision):
                 if numbers[i] == current_run[-1] + 1 or numbers[i] == current_run[-1] + 2:
                     current_run.append(numbers[i]) #save the next entry to current_run if its a direct consecutive or the last of a consecutive 3 series
                 else:   # Run ended, save if potential group is (2+)
-                    if len(current_run) == self.COLORS_POTENTIAL_GROUP_LENGTH: #if the run so far is 2+, save it
+                    if len(current_run) >= self.COLORS_POTENTIAL_GROUP_LENGTH: #if the run so far is 2+, save it
                         runs.append(current_run[:]) #saving all saved in current_run
                     current_run = [numbers[i]]  #resets current_run starting point to the breakpoint
             
             # Check last run
-            if len(current_run) == self.COLORS_POTENTIAL_GROUP_LENGTH:
+            if len(current_run) >= self.COLORS_POTENTIAL_GROUP_LENGTH:
                 runs.append(current_run)
             
             # Add all potential runs for this color to the final output list
@@ -265,7 +265,7 @@ class MEDIUM(playerDecision):
 
         return weights  #returns a dict of keys: cards in hand, values:  a list of weights [ color_group_score, number__group_score, instances_of_the_card_]
 
-    #TODO: Core logic for player 'MEDIUM'
+    #Core logic for player 'MEDIUM'
     def choose(self):
         valid_group = self.get_discard_group() # Get list of a single Valid Group in current hand 
         
@@ -274,7 +274,7 @@ class MEDIUM(playerDecision):
         current_hand = self.game_state.current_player.hand #getting current cards in current hand : Cards
         hand_size = len(current_hand)
         weights=self.get_decisionWeights(current_hand) # compute and fetch weights for current hand 
-        # unpack weights to get maximum color_group_value and maximum_number_group_value of the card that has it; 
+        #unpack
         max_color_weight_in_hand,max_number_weight_in_hand,_= max(weights.values(),key=lambda x:x[0]+x[1]) if weights else [0,0,0]
         max_weight_in_hand = max_color_weight_in_hand+max_number_weight_in_hand # compute a sum of color+number group value
         hand_threshold = (self.MIN_HAND_THRESHOLD if max_weight_in_hand<2 else self.MAX_HAND_THRESHOLD) if weights else self.MAX_HAND_THRESHOLD #arbitrary tuning
@@ -288,18 +288,17 @@ class MEDIUM(playerDecision):
             print("-------valid groups: ",valid_group)
             if valid_group and self.pause: input("Press enter to Continue...")
         #END OF DEBUG AREA
-        # IMMEDIATELY RETURN DISCARD A GROUP MOVE WHEN FOUND
         if valid_group!=None:
             return PlayerMove.DISCARD_VALID_CARDS
         
 
         # MAIN BLOCK
 
-        #IF HAND IS TOO BIG : REDUCE HAND BY JUST DRAWING 1 and DISCARDING LEAST VALUABLE CARD
+        #hand too big
         if hand_size >= hand_threshold and PlayerMove.DRAW_ONE in self.available_moves: 
             return PlayerMove.DRAW_ONE
 
-        #REBUILD HAND if its low but very weak
+        #rebuild if hand too small : gets stuck at 1 otherwise
         elif (hand_size <= 4 or max_weight_in_hand <= 2) and PlayerMove.DRAW in self.available_moves:
             # Aggressive draw when desperate: 3 cards if hand <= 2, else 1-2 based on weakness
             if hand_size == 1 or max_weight_in_hand<0:
@@ -318,15 +317,15 @@ class MEDIUM(playerDecision):
             else:
                 target_piles = [self.game_state.players[0].hand, self.game_state.deck.cards]
             
-            # Check if any opponent has cards before attempting steal strategies
-            opponents_have_cards = any(len(pile) > 0 for pile in target_piles[:-1])  # Exclude deck
-            # building a probability dict for computing probability of getting a target card
+            # edgecase: for some reason gameloop asks for a move even when someone's hand reaches 0 #ask Darron
+            opponents_have_cards = any(len(pile) > 0 for pile in target_piles[:-1])  # -1 is deck
+            # dict of probability of each target card and their assoc target location index
             probabilities: Dict[Card, tuple[float,int]] = {} # Card -> (best_probability, pile_index)
             for each_target_card in self.get_target_cards(current_hand): #goes through each want to have card for the current existing hand
                 best_prob =0.0
                 best_index = -1
                 for i, pile in enumerate(target_piles):
-                    if len(pile) == 0:  # Skip empty piles
+                    if len(pile) == 0:  # crashed for some cases
                         continue
                     if each_target_card in pile:
                         instance= sum( 1 for each_card in pile if each_card==each_target_card)
@@ -339,64 +338,79 @@ class MEDIUM(playerDecision):
             #print('probabilities')
             #print(probabilities)
             if probabilities:
-                best_card, (prob, pile_index) = max(probabilities.items(),key=lambda x:x[1][0])
-                pile_counts = {}
-                for card, (prob,index) in probabilities.items():  # Iterate through all target cards and their pile locations
-                    pile_counts[index] = pile_counts.get(index,0)+1
-
+                
+                pile_target_counts = {}  
+                pile_total_instances = {} 
+                
+                for card, (prob, pile_index) in probabilities.items():
+                    pile_target_counts[pile_index] = pile_target_counts.get(pile_index, 0) + 1
+                    pile_size = len(target_piles[pile_index])
+                    if pile_size > 0:
+                        instances = int(prob * pile_size)
+                        pile_total_instances[pile_index] = pile_total_instances.get(pile_index, 0) + instances
 
                 deck_index = len(target_piles) - 1
                 deck_size = len(self.game_state.deck.cards)
-                deck_target_card_count = pile_counts.get(deck_index,0)
-
                 hand_space = 20 - hand_size
+                player_pile_index = [i for i in pile_target_counts.keys() if i != deck_index]
                 draw_options = []
-                max_draw = min(3,hand_space)
-                for n_draw in range(1, max_draw+1):
-                    prob_draw_n = 1 - (((deck_size-deck_target_card_count)/deck_size)**n_draw) #probability of getting a target card from n draws from deck
-                    draw_options.append((n_draw,prob_draw_n))
+                if deck_index in pile_target_counts and deck_size > 0:
+                    deck_target_count = pile_target_counts[deck_index]
+                    max_draw = min(3, hand_space)
+                    
+                    for n_draw in range(1, max_draw + 1):
+                        # Probability of getting at least one target card in n draws
+                        prob_draw_n = 1 - (((deck_size - deck_target_count) / deck_size) ** n_draw)
+                        # update weight by concentration ratio
+                        deck_concentration = deck_target_count / deck_size
+                        weighted_score = prob_draw_n * deck_concentration
+                        draw_options.append((n_draw, prob_draw_n, deck_concentration, weighted_score))
                 
+                # steal from player with higher ratio of targets
                 player_options = []
-                for index in range(deck_index): # going through 0,1 or 0 only
-                    opp_hand_size = len(target_piles[index])
-                    if opp_hand_size == 0 or hand_size==0: return PlayerMove.END_TURN #avoids making any other move when a hand has reached 0
-                    if opp_hand_size <= 2: continue  # Skip players with only 1 card
-                    prob_value_of_index = pile_counts.get(index,0) / hand_size
-                    player_options.append((index,prob_value_of_index))
-                if player_options:
-                    best_player_index, best_player_prob_value = max(player_options, key=lambda x: x[1])
-                else:
-                    best_player_index, best_player_prob_value = (-1,0.0)
-                if draw_options:
-                    best_deck_draw_n, best_deck_prob_drawN = max(draw_options, key=lambda x: (x[1],-x[0]))
-                else:
-                    best_deck_draw_n, best_deck_prob_drawN = (-1, 0.0)
-                #decide move based on target card concentration in each pile
-                # In endgame (<=3 cards), be more aggressive about stealing if probability is decent
-                endgame_steal_threshold = 0.15 if hand_size <= 3 else 0.0
+                if opponents_have_cards:
+                    for pile_index in player_pile_index:
+                        opponent_hand_size = len(target_piles[pile_index])
+                        if opponent_hand_size == 0:
+                            continue
+                        if opponent_hand_size == 1 and hand_size > 3:
+                            continue
+                        target_count = pile_target_counts.get(pile_index, 0)
+                        if target_count > 0:
+                            #target card to pile count ratio
+                            ratio = target_count / opponent_hand_size
+                            steal_prob = ratio
+                            weighted_score = steal_prob * ratio
+                            player_options.append((pile_index, steal_prob, ratio, weighted_score))
                 
-                if best_deck_prob_drawN > best_player_prob_value and PlayerMove.DRAW in self.available_moves:
-                    N_options= [n for n,p in draw_options if p>=best_player_prob_value]
-                    self.draw_N_value = min(N_options) if N_options else 1
+                best_deck_option= max (draw_options, key=lambda x:x[3]) if draw_options else None
+                best_player_option =max(player_options, key=lambda x:x[3]) if player_options else None
+                # need to tune more
+                endgame_steal_val = 1.5 if hand_size <= 3 else 1.0
+                if best_deck_option and best_player_option:
+                    deck_score = best_deck_option[3]
+                    player_score = best_player_option[3] * endgame_steal_val
+                    if deck_score > player_score and PlayerMove.DRAW in self.available_moves: #prioritise deck over player if ratio higher
+                        self.draw_N_value = best_deck_option[0]  # n_draw
+                        return PlayerMove.DRAW
+                    elif PlayerMove.TAKE in self.available_moves: #prioritise playerelse
+                        self.target_player_index = best_player_option[0]  # pile_index
+                        return PlayerMove.TAKE
+                elif best_deck_option and PlayerMove.DRAW in self.available_moves:
+                    self.draw_N_value = best_deck_option[0]
                     return PlayerMove.DRAW
-                elif (best_player_prob_value > best_deck_prob_drawN or 
-                      best_player_prob_value > endgame_steal_threshold) and PlayerMove.TAKE in self.available_moves:
-                    self.target_player_index = best_player_index
+                elif best_player_option and PlayerMove.TAKE in self.available_moves:
+                    self.target_player_index = best_player_option[0]
                     return PlayerMove.TAKE
-
-            # Check for duplicates with low value - worth swapping out
             duplicate_cards = any(w[2] > 1 for w in weights.values()) if weights else False
             if duplicate_cards and PlayerMove.DRAW_ONE in self.available_moves:
                 return PlayerMove.DRAW_ONE
-            
-            # Last resort: if we have draws available and hand is small, try to build
             if hand_size <= 5 and PlayerMove.DRAW in self.available_moves:
                 self.draw_N_value = min(2, 20 - hand_size)
                 return PlayerMove.DRAW
-            
             return PlayerMove.END_TURN
-
         return PlayerMove.PASS
+    
     # as per gamelogic, discard_card_from_hand is only \\
     # called when previous move is PlayerMove.DRAW_ONE
     def discard_card_from_hand(self) -> int:

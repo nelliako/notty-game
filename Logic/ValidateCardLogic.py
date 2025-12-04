@@ -6,123 +6,85 @@ from pygame import key
 
 from Logic.Classes import Card, CardColor
 
-#TODO: FIX NEEDED
-# 1. 4 cards should be returned instead of 3 for same number/different colour
-# 2. For example, if blue 1, blue 2, blue 8, blue 9 are present in the hand, they will be returned - bug with colours_identical function in consecutive numbers
-# 3. Blue 1, blue 2, blue 3, blue 4, blue 8 are discarded all together - bug here  "return [colors_cards[color][number] for number in colors_cards[color]]""
-
 
 def colours_identical(cards: List[Card]) -> list[Card] | None:
-     # number of cards per color
-    colors = {}
+    """
+    Find exactly 3 consecutive same-color cards.
+    Returns the first valid sequence found, or None.
+    """
     # stores card for each color & number
     colors_cards: Dict[CardColor, Dict[int, Card]] = {}
-    cards_to_discard = []
 
     for card in set(cards):
         color = card.color
         number = card.number
 
         if color not in colors_cards:
-            colors[color] = 1
             colors_cards[color] = {}
-        else:
-            colors[color] = colors[color] + 1
+        
+        colors_cards[color][number] = card
 
-        if not colors_cards[color].get(number, False):
-            colors_cards[color][number] = card
-        else:
-            colors_cards[color][number] = card
-
+    # Check each color for valid sequences
     for color in colors_cards:
-        if colors[color] < 3:
+        if len(colors_cards[color]) < 3:
             continue
-        # print(colors_cards)
+        
         keys = sorted(list(colors_cards[color].keys()))
-        # print(keys)
-
-        # create subsets
-        subsets = []
-        for i in range(len(keys)):
-            if i+3 > len(keys):
-                break
-
-            for l in range(i+3, len(keys)+1):
-                subsets.append(keys[i:l])
-
-        # loop over subsets
-        for sub in subsets:
-            consecutive_numbers = 0
-            # print(f"Subset: {sub}")
-            for j in range(1, len(sub)):
-                # print(f"Difference: {sub[j]- sub[j-1]}")
-                if (sub[j]- sub[j-1]) == 1:
-                    consecutive_numbers += 1
-                else:
-                    break
-
-                # print(consecutive_numbers)
-            if consecutive_numbers >= 3:
-                cards_sublist = []
-                for number in sub:
-                    cards_sublist.append(colors_cards[color][number])
-                # print(f"adding subset: {cards_sublist}")
-                cards_to_discard.append(cards_sublist)
-
-    if len(cards_to_discard) > 0:
-        sorted_cards = sorted(cards_to_discard, key=len, reverse=True)
-        # for card in sorted_cards:
-            # print(f"Discard Cards: {card}")
-        return sorted_cards[0]
+        
+        # Look for exactly 3 consecutive numbers
+        for i in range(len(keys) - 2):
+            # Check if we have exactly 3 consecutive numbers
+            if keys[i+1] == keys[i] + 1 and keys[i+2] == keys[i] + 2:
+                # Return exactly these 3 cards
+                return [
+                    colors_cards[color][keys[i]],
+                    colors_cards[color][keys[i+1]],
+                    colors_cards[color][keys[i+2]]
+                ]
 
     return None
 
 
 def numbers_identical(cards: List[Card]) -> list[Card] | None:
+    """
+    Find exactly 4 same-number different-color cards.
+    Returns the first valid set found, or None.
+    """
     number_cards: Dict[int, List[Card]] = {}
-    validate_cards = []
+    
     for card in set(cards):
         number = card.number
-
+        
         if number not in number_cards:
             number_cards[number] = []
-            number_cards[number].append(card)
-        else:
-            number_cards[number].append(card)
-
+        number_cards[number].append(card)
+    
+    # Look for exactly 4 cards with the same number
     for number in number_cards:
-        if len(number_cards[number]) < 4:
-            continue
-        else:
-            validate_cards.append(number_cards[number])
-
-    if len(validate_cards) > 0:
-        validate_cards = sorted(validate_cards, key=len, reverse=True)
-        # for card in validate_cards:
-            # print(f"Discard Cards: {card}")
-        return validate_cards[0]
-
+        if len(number_cards[number]) == 4:
+            # Verify all 4 cards have different colors
+            colors_in_set = set(card.color for card in number_cards[number])
+            if len(colors_in_set) == 4:
+                return number_cards[number]
+    
     return None
 
 
 def contains_valid_group(cards: List[Card]) -> list[Card] | None:
+    """
+    Check if hand contains a valid group to discard.
+    Returns exactly 3 consecutive same-color cards OR exactly 4 same-number different-color cards.
+    If both are available, prioritizes sets (4 cards) over sequences (3 cards).
+    """
     number_cards = numbers_identical(cards)
     color_cards = colours_identical(cards)
-    if number_cards is not None and color_cards is not None:
-        if len(number_cards) > len(color_cards):
-            return number_cards
-        elif len(number_cards) < len(color_cards):
-            return color_cards
-        else:
-            return random.choice([number_cards, color_cards])
+    
+    # Prioritize set of 4 over sequence of 3
     if number_cards is not None:
-        # print("numbersIdentical")
         return number_cards
-
+    
     if color_cards is not None:
-        # print("coloursIdentical")
         return color_cards
-
+    
     return None
 
-# def consecutive_numbers(cards: List[Card]) -> list[Card] | None:
