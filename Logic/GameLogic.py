@@ -41,9 +41,8 @@ def game_loop():
     game_state.deck.shuffle_deck(trigger_ui=False)  
 
     
-    game_state.players.append(Player(player_id=uuid.uuid4(), hand=[], player_type=PlayerType.COMPUTER_EASY, name=f"Player {0}"))
-    game_state.players.append(Player(player_id=uuid.uuid4(), hand=[], player_type=PlayerType.COMPUTER_MEDIUM, name=f"Player {1}"))
-    game_state.players.append(Player(player_id=uuid.uuid4(), hand=[], player_type=PlayerType.COMPUTER_HARD, name=f"Player {2}"))
+    for i in range(number_of_players):
+        game_state.players.append(Player(player_id=uuid.uuid4(), hand=[], player_type=PlayerType.COMPUTER_MEDIUM, name=f"Player {i}"))
 
     # deal 4 cards to each player
     for player in game_state.players:
