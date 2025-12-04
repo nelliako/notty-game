@@ -15,10 +15,17 @@ class hash_game_state:
     def __hash__(self):
         return hash((self.current_))
 
+#https://jeffbradberry.com/posts/2015/09/intro-to-monte-carlo-tree-search/
+# Parts of the MonteCarlo is based on the work presented above
 
 class MonteCarlo:
     def __init__(self):
         pass
+    
+    def update(self,hash_game_state):
+        pass
+
+
 
     def get_optimal_move(self):
         pass

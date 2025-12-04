@@ -5,7 +5,7 @@ import time
 from collections import deque
 import gif_pygame
 
-from Logic.computerLogic.playerDecision import EASY
+from Logic.computerLogic.playerDecision import *
 from ui.button import Button
 from ui.objects import imageObject
 from ui.text_object import textObject
@@ -312,7 +312,8 @@ class playScreen(screenBase):
         if self.game_state.current_player.type != PlayerType.HUMAN:
             return
         # Pretend we are a computer
-        self.game_state.current_player.type = self.game_state.computer_difficulty
+        #self.game_state.current_player.type = self.game_state.computer_difficulty
+        self.game_state.current_player.type = PlayerType.COMPUTER_HARD
         # Doing a computer turn
         if not self.computer_turn():
             # Somebody won, do not pass the turn to the next.

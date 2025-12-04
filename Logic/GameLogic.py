@@ -40,6 +40,7 @@ def game_loop():
     game_state = GameState(players=deque(), deck=Deck())
     game_state.deck.shuffle_deck(trigger_ui=False)  
 
+    
     for i in range(number_of_players):
         game_state.players.append(Player(player_id=uuid.uuid4(), hand=[], player_type=PlayerType.COMPUTER_MEDIUM, name=f"Player {i}"))
 
