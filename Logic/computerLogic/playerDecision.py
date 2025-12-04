@@ -299,7 +299,7 @@ class MEDIUM(playerDecision):
         #hand too big
         if hand_size >= hand_threshold and PlayerMove.DRAW_ONE in self.available_moves: 
             return PlayerMove.DRAW_ONE
-        # THIS WAS THE FINAL HITTTTT!!! : SWAP A BIT MORE WHEN HAND MID
+        # THIS WAS THE FINAL HITTTTT!!! : SWAP A BIT MORE WHEN HAND MID # hs5,mwh 3 works
         if hand_size<=5 and max_weight_in_hand<=3 and PlayerMove.DRAW_ONE in self.available_moves: 
             return PlayerMove.DRAW_ONE
 
