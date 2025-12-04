@@ -90,7 +90,7 @@ class MEDIUM(playerDecision):
     DUPLICATE_RETENTION_VALUATION_FACTOR = 0.43
     MAX_HAND_SIZE = 20
     MIN_HAND_THRESHOLD = 7
-    MAX_HAND_THRESHOLD = 19
+    MAX_HAND_THRESHOLD = 17
     LOW_WEIGHT_THRESHOLD = 2
     MOST_USELESS_TO_NUMBER_VALUE=-1.19
     MOST_USELESS_TO_COLOR_VALUE= -1.5
@@ -299,6 +299,10 @@ class MEDIUM(playerDecision):
         #hand too big
         if hand_size >= hand_threshold and PlayerMove.DRAW_ONE in self.available_moves: 
             return PlayerMove.DRAW_ONE
+        # THIS WAS THE FINAL HITTTTT!!! : SWAP A BIT MORE WHEN HAND MID
+        if hand_size<=5 and max_weight_in_hand<=3 and PlayerMove.DRAW_ONE in self.available_moves: 
+            return PlayerMove.DRAW_ONE
+
 
         #rebuild if hand too small : gets stuck at 1 otherwise
         elif (hand_size<= 4 or max_weight_in_hand<= self.LOW_WEIGHT_THRESHOLD) and PlayerMove.DRAW in self.available_moves:
@@ -455,7 +459,7 @@ class HARD(playerDecision):
     DUPLICATE_RETENTION_VALUATION_FACTOR = 0.43
     MAX_HAND_SIZE = 20
     MIN_HAND_THRESHOLD = 7
-    MAX_HAND_THRESHOLD = 19
+    MAX_HAND_THRESHOLD = 17
     LOW_WEIGHT_THRESHOLD = 2
     MOST_USELESS_TO_NUMBER_VALUE=-1.19
     MOST_USELESS_TO_COLOR_VALUE= -1.5
@@ -683,14 +687,17 @@ class HARD(playerDecision):
         # main--------------------------------------------
 
         #hand too big
-        if hand_size >= hand_threshold and PlayerMove.DRAW_ONE in self.available_moves: 
+        if (hand_size >= hand_threshold) and PlayerMove.DRAW_ONE in self.available_moves: 
+            return PlayerMove.DRAW_ONE
+        # THIS WAS THE FINAL HITTTTT!!! : SWAP A BIT MORE WHEN HAND MID
+        if hand_size<=5 and max_weight_in_hand<=3 and PlayerMove.DRAW_ONE in self.available_moves: 
             return PlayerMove.DRAW_ONE
 
         #rebuild if hand too small : gets stuck at 1 otherwise
         elif (hand_size<= 4 or max_weight_in_hand<= self.LOW_WEIGHT_THRESHOLD) and PlayerMove.DRAW in self.available_moves:
-            if hand_size == 1 or (max_weight_in_hand<(self.LOW_WEIGHT_THRESHOLD-1)):
+            if (hand_size == 1) or (max_weight_in_hand<(self.LOW_WEIGHT_THRESHOLD-1)):
                 self.draw_N_value= 3  # max draw
-            elif hand_size<=2 and max_weight_in_hand <=0: # Very weak hand
+            elif (hand_size<=2) and (max_weight_in_hand <=0): # Very weak hand
                 self.draw_N_value= 2 
             else:
                 self.draw_N_value= 1

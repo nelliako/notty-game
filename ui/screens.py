@@ -5,7 +5,7 @@ import time
 from collections import deque
 import gif_pygame
 
-from Logic.computerLogic.playerDecision import EASY
+from Logic.computerLogic.playerDecision import *
 from ui.button import Button
 from ui.objects import imageObject
 from ui.text_object import textObject
