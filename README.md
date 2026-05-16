@@ -19,16 +19,17 @@ We split our 5-member team into two main groups to work on the logic and the use
 
 ## 🛠️ Repository structure
 
-```├── Logic/                      # Backend Rules & Core Engine
-```│   ├── GameLogic.py            # Main Game Loop & Move Workflows (My Focus)
-```│   ├── PlayerLogic.py          # Action Execution & Rules Checking (My Focus)
-```│   ├── Classes.py              # Card, Deck, and Hand Data Models
-```│   ├── ValidateCardLogic.py    # Card Combination (Meld) Checking Utilities
-```│   └── computerLogic/          # AI Decision Code
-```└── ui/                         # Visual Interface (Built by the UI Team)
-```├── screens.py              # Windows & Pygame Event Handlers
-```├── card_visual.py          # Card Rendering & UI Coordinates
-```└── sounds.py               # Audio Events
+```bash
+├── Logic/                      # Backend Rules & Core Engine
+│   ├── GameLogic.py            # Main Game Loop & Move Workflows (My Focus)
+│   ├── PlayerLogic.py          # Action Execution & Rules Checking (My Focus)
+│   ├── Classes.py              # Card, Deck, and Hand Data Models
+│   ├── ValidateCardLogic.py    # Card Combination (Meld) Checking Utilities
+│   └── computerLogic/          # AI Decision Code
+└── ui/                         # Visual Interface (Built by the UI Team)
+├── screens.py              # Windows & Pygame Event Handlers
+├── card_visual.py          # Card Rendering & UI Coordinates
+└── sounds.py               # Audio Events
 
 
 ## 💻 Engineering highlights 
@@ -67,5 +68,6 @@ I was heavily involved in the debugging phase when combining the backend logic w
    ```bash
    pip install pygame
 3. Run the main script:
-   ```python main.py
+   ```bash
+   python main.py
 
