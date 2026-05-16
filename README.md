@@ -67,8 +67,10 @@ I was heavily involved in the debugging phase when combining the backend logic w
 1. Clone this repository to your local computer.
 2. Install the Pygame dependency:
    ```
-   pip install pygame```
+   pip install pygame
+   ```
 3. Run the main script:
    ```
-   python main.py```
+   python main.py
+   ```
 
