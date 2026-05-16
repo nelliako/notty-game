@@ -19,7 +19,7 @@ We split our 5-member team into two main groups to work on the logic and the use
 
 ## 🛠️ Repository structure
 
-```bash
+```
 ├── Logic/                      # Backend Rules & Core Engine
 │   ├── GameLogic.py            # Main Game Loop & Move Workflows (My Focus)
 │   ├── PlayerLogic.py          # Action Execution & Rules Checking (My Focus)
@@ -30,6 +30,7 @@ We split our 5-member team into two main groups to work on the logic and the use
 ├── screens.py              # Windows & Pygame Event Handlers
 ├── card_visual.py          # Card Rendering & UI Coordinates
 └── sounds.py               # Audio Events
+```
 
 
 ## 💻 Engineering highlights 
@@ -65,9 +66,9 @@ I was heavily involved in the debugging phase when combining the backend logic w
 ### Running the app
 1. Clone this repository to your local computer.
 2. Install the Pygame dependency:
-   ```bash
+   ```
    pip install pygame```
 3. Run the main script:
-   ```bash
-   python main.py
+   ```
+   python main.py```
 
