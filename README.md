@@ -12,23 +12,23 @@ We split our 5-member team into two main groups to work on the logic and the use
 * **Logic sub-team (3 Members):**
   * **My role:** I worked closely with one other teammate to design and build the **main game loop, turn transitions** (`GameLogic.py`). I was specifically responsible for **designing how moves work and writing the constraint-checking logic**. I also led the debugging phase.
   * **Our other teammate:** Focused entirely on the player logic, specifically the computer opponent, writing the AI behavior using a Monte Carlo Tree Search (MCTS) algorithm.*
-* **UI/UX Sub-Team (2 Members):**
+* **UI/UX sub-team (2 Members):**
   * **Teammates 3 & 4:** Created the visual layout, card rendering pipelines, screen menus, and audio events using Pygame.
 
 ---
 
 ## 🛠️ Repository structure
 
-├── Logic/                      # Backend Rules & Core Engine
-│   ├── GameLogic.py            # Main Game Loop & Move Workflows (My Focus)
-│   ├── PlayerLogic.py          # Action Execution & Rules Checking (My Focus)
-│   ├── Classes.py              # Card, Deck, and Hand Data Models
-│   ├── ValidateCardLogic.py    # Card Combination (Meld) Checking Utilities
-│   └── computerLogic/          # AI Decision Code
-└── ui/                         # Visual Interface (Built by the UI Team)
-├── screens.py              # Windows & Pygame Event Handlers
-├── card_visual.py          # Card Rendering & UI Coordinates
-└── sounds.py               # Audio Events
+```├── Logic/                      # Backend Rules & Core Engine
+```│   ├── GameLogic.py            # Main Game Loop & Move Workflows (My Focus)
+```│   ├── PlayerLogic.py          # Action Execution & Rules Checking (My Focus)
+```│   ├── Classes.py              # Card, Deck, and Hand Data Models
+```│   ├── ValidateCardLogic.py    # Card Combination (Meld) Checking Utilities
+```│   └── computerLogic/          # AI Decision Code
+```└── ui/                         # Visual Interface (Built by the UI Team)
+```├── screens.py              # Windows & Pygame Event Handlers
+```├── card_visual.py          # Card Rendering & UI Coordinates
+```└── sounds.py               # Audio Events
 
 
 ## 💻 Engineering highlights 
@@ -67,5 +67,5 @@ I was heavily involved in the debugging phase when combining the backend logic w
    ```bash
    pip install pygame
 3. Run the main script:
-   python main.py
+   ```python main.py
 
