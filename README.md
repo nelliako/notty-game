@@ -15,9 +15,9 @@ We split our 5-member team into two main groups to work on the logic and the use
 * **UI/UX sub-team (2 Members):**
   * **Teammates 3 & 4:** Created the visual layout, card rendering pipelines, screen menus, and audio events using Pygame.
 
----
 
-## 🛠️ Repository structure
+
+## Repository structure
 
 ```
 ├── Logic/                      # Backend Rules & Core Engine
@@ -33,7 +33,7 @@ We split our 5-member team into two main groups to work on the logic and the use
 ```
 
 
-## 💻 Engineering highlights 
+## Engineering highlights 
 
 ### 1. Game loop & turn management
 I co-designed the system that manages how matches progress. In *Notty*, a player can perform multiple actions (drawing, stealing, or discarding card groups) in an arbitrary order during a single turn. I structured the flow so that the game loop accurately tracks the state after each intermediate action, ensuring variables update cleanly and turns transition only when all rules are satisfied.
@@ -46,7 +46,7 @@ I wrote the validation logic inside `GameLogic.py` to catch and block illegal mo
 ### 3. Integration & code debugging
 I was heavily involved in the debugging phase when combining the backend logic with the UI. Because player hands are face-up and the AI continuously evaluates the deck, we had several data-sync bugs early on. Our Logic sub-team diagnosed and fixed race conditions between UI button clicks and backend state updates.
 
-## 📋 Product Management highlights
+## Product Management highlights
 
 ### 1. Requirements translation & API design
 * **Turning rules into code:** I took the text-heavy game rules document and translated it into clear, step-by-step logic requirements that our sub-team could easily convert into Python functions using LucidCharts.
@@ -57,7 +57,7 @@ I was heavily involved in the debugging phase when combining the backend logic w
 * **Bug triage:** During the final week of integration, I organized our testing and sorted bugs into "UI presentation issues" versus "core data logic issues." This kept the team organized and helped us catch game-breaking bugs quickly before release.
 
 
-## 🔧 Installation & quick start
+## Installation & quick start
 
 ### Prerequisites
 * Python 3.10 or higher
