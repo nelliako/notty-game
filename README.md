@@ -1,6 +1,6 @@
 # Notty Card Game 
 
-Link to Video Demo: https://www.loom.com/share/8a56be801d5c4f54b9069a5c6da48f3e 
+Video Demo: https://www.loom.com/share/8a56be801d5c4f54b9069a5c6da48f3e 
 
 This repository contains a desktop version of the **Notty** card game built with **Python** and **Pygame**. The application allows a human player to compete against up to two computer opponents. 
 
